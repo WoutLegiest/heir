@@ -3,7 +3,13 @@
 These tests exercise Rust codegen for the
 [tfhe-rs](https://github.com/zama-ai/tfhe-rs) backend library, including
 compiling the generated Rust source and running the resulting binary. This sets
-tests are specifically of the boolean plaintexts and the accompanying library.
+tests are specifically of the boolean plaintexts, accompanying COSIC-KU Leuven version of the library,
+and the [FPT-accelerator](https://eprint.iacr.org/2022/1635).
+
+> :warning: Not possible to run these tests without the COSIC extension of TFHE-rs and FPT-accelerator
+
+This specific e2e tests are designed for the [FPT](https://eprint.iacr.org/2022/1635) accelerator, made by COSIC. 
+
 
 To avoid introducing these large dependencies into the entire project, these
 tests are manual, and require the system they're running on to have
@@ -16,7 +22,7 @@ Cargo home `$HOME/.cargo` may need to be replaced by your custom `$CARGO_HOME`,
 if you overrode the default option when installing Cargo.
 
 ```bash
-bazel query "filter('.mlir.test$', //tests/tfhe_rust_bool/end_to_end/...)" \
+bazel query "filter('.mlir.test$', //tests/tfhe_rust_bool/end_to_end_fpga/...)" \
   | xargs bazel test --sandbox_writable_path=$HOME/.cargo "$@"
 ```
 
