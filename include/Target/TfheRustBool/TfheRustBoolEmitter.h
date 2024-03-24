@@ -72,6 +72,8 @@ class TfheRustBoolEmitter {
   FailureOr<std::string> convertType(Type type);
 
   void emitAssignPrefix(::mlir::Value result);
+  void emitReferenceConversion(::mlir::Value value);
+  
 };
 
 }  // namespace tfhe_rust_bool
