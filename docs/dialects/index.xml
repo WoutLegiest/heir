@@ -6,7 +6,7 @@
 &lt;h3 id="bgvadd-heirbgvaddop">&lt;code>bgv.add&lt;/code> (heir::bgv::AddOp)&lt;/h3>
 &lt;p>&lt;em>Addition operation between ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.add` `(` operands `)` attr-dict `:` qualified(type($output))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.add` operands attr-dict `:` qualified(type($output))
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>Commutative&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
 &lt;h4 id="operands">Operands:&lt;/h4>
@@ -19,11 +19,11 @@
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>y&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
@@ -46,7 +46,7 @@
 &lt;h3 id="bgvadd_plain-heirbgvaddplainop">&lt;code>bgv.add_plain&lt;/code> (heir::bgv::AddPlainOp)&lt;/h3>
 &lt;p>&lt;em>Addition operation between ciphertext-plaintext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.add_plain` `(` operands `)` attr-dict `:` qualified(type($output))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.add_plain` operands attr-dict `:` `(` qualified(type(operands)) `)` `-&amp;gt;` qualified(type(results))
 &lt;/code>&lt;/pre>&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
 &lt;h4 id="operands-1">Operands:&lt;/h4>
 &lt;table>
@@ -58,11 +58,11 @@
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>ciphertextInput&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>y&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>plaintextInput&lt;/code>&lt;/td>
 &lt;td>A type for RLWE plaintexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
@@ -85,7 +85,7 @@
 &lt;h3 id="bgvextract-heirbgvextractop">&lt;code>bgv.extract&lt;/code> (heir::bgv::ExtractOp)&lt;/h3>
 &lt;p>&lt;em>Extract the i-th element of a ciphertext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.extract` `(` operands `)` attr-dict `:` `(` qualified(type(operands)) `)` `-&amp;gt;` qualified(type(results))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.extract` operands attr-dict `:` qualified(type($input)) `,` type($offset)
 &lt;/code>&lt;/pre>&lt;p>While this operation is costly to compute in FHE, we represent it so we can
 implement efficient lowerings and folders.&lt;/p>
 &lt;p>This op can be implemented as a plaintext multiplication with a one-hot
@@ -101,7 +101,7 @@ vector and a rotate.&lt;/p>
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;tr>
@@ -128,7 +128,7 @@ vector and a rotate.&lt;/p>
 &lt;h3 id="bgvmodulus_switch-heirbgvmodulusswitch">&lt;code>bgv.modulus_switch&lt;/code> (heir::bgv::ModulusSwitch)&lt;/h3>
 &lt;p>&lt;em>Lower the modulus level of the ciphertext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.modulus_switch` `(` operands `)` attr-dict `:` `(` qualified(type(operands)) `)` `-&amp;gt;` qualified(type(results))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.modulus_switch` operands attr-dict `:` qualified(type($input)) `-&amp;gt;` qualified(type($output))
 &lt;/code>&lt;/pre>&lt;h4 id="attributes">Attributes:&lt;/h4>
 &lt;table>
 &lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
@@ -144,7 +144,7 @@ vector and a rotate.&lt;/p>
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
@@ -167,7 +167,7 @@ vector and a rotate.&lt;/p>
 &lt;h3 id="bgvmul-heirbgvmulop">&lt;code>bgv.mul&lt;/code> (heir::bgv::MulOp)&lt;/h3>
 &lt;p>&lt;em>Multiplication operation between ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.mul` `(` operands `)` attr-dict `:` qualified(type($x)) `-&amp;gt;` qualified(type($output))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.mul` operands attr-dict `:` `(` qualified(type(operands)) `)` `-&amp;gt;` qualified(type(results))
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>Commutative&lt;/code>, &lt;code>InferTypeOpAdaptor&lt;/code>, &lt;code>SameOperandsAndResultRings&lt;/code>, &lt;code>SameTypeOperands&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
 &lt;h4 id="operands-4">Operands:&lt;/h4>
@@ -180,11 +180,11 @@ vector and a rotate.&lt;/p>
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>y&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
@@ -207,7 +207,7 @@ vector and a rotate.&lt;/p>
 &lt;h3 id="bgvmul_plain-heirbgvmulplainop">&lt;code>bgv.mul_plain&lt;/code> (heir::bgv::MulPlainOp)&lt;/h3>
 &lt;p>&lt;em>Multiplication operation between ciphertext-plaintext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.mul_plain` `(` operands `)` attr-dict `:` qualified(type($output))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.mul_plain` operands attr-dict `:` `(` qualified(type(operands)) `)` `-&amp;gt;` qualified(type(results))
 &lt;/code>&lt;/pre>&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
 &lt;h4 id="operands-5">Operands:&lt;/h4>
 &lt;table>
@@ -219,11 +219,11 @@ vector and a rotate.&lt;/p>
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>ciphertextInput&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>y&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>plaintextInput&lt;/code>&lt;/td>
 &lt;td>A type for RLWE plaintexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
@@ -246,7 +246,7 @@ vector and a rotate.&lt;/p>
 &lt;h3 id="bgvnegate-heirbgvnegate">&lt;code>bgv.negate&lt;/code> (heir::bgv::Negate)&lt;/h3>
 &lt;p>&lt;em>Negate the coefficients of the ciphertext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.negate` `(` operands `)` attr-dict `:` qualified(type($output))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.negate` operands attr-dict `:` qualified(type($output))
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
 &lt;h4 id="operands-6">Operands:&lt;/h4>
@@ -259,7 +259,7 @@ vector and a rotate.&lt;/p>
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
@@ -282,7 +282,7 @@ vector and a rotate.&lt;/p>
 &lt;h3 id="bgvrelinearize-heirbgvrelinearize">&lt;code>bgv.relinearize&lt;/code> (heir::bgv::Relinearize)&lt;/h3>
 &lt;p>&lt;em>Relinearize the ciphertext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.relinearize` `(` operands `)` attr-dict `:` `(` qualified(type(operands)) `)` `-&amp;gt;` qualified(type(results))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.relinearize` operands attr-dict `:` qualified(type($input)) `-&amp;gt;` qualified(type($output))
 &lt;/code>&lt;/pre>&lt;p>This op takes integer array attributes &lt;code>from_basis&lt;/code> and &lt;code>to_basis&lt;/code> that are
 used to indicate the key basis from which and to which the ciphertext is
 encrypted against. A ciphertext is canonically encrypted against key basis
@@ -307,7 +307,7 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
@@ -330,7 +330,7 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;h3 id="bgvrotate-heirbgvrotate">&lt;code>bgv.rotate&lt;/code> (heir::bgv::Rotate)&lt;/h3>
 &lt;p>&lt;em>Rotate the coefficients of the ciphertext using a Galois automorphism.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.rotate` `(` operands `)` attr-dict `:` `(` qualified(type(operands)) `)` `-&amp;gt;` qualified(type(results))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.rotate` operands attr-dict `:` qualified(type($input)) `,` type($offset)
 &lt;/code>&lt;/pre>&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
 &lt;h4 id="operands-8">Operands:&lt;/h4>
 &lt;table>
@@ -342,7 +342,7 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;tr>
@@ -369,7 +369,7 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;h3 id="bgvsub-heirbgvsubop">&lt;code>bgv.sub&lt;/code> (heir::bgv::SubOp)&lt;/h3>
 &lt;p>&lt;em>Subtraction operation between ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.sub` `(` operands `)` attr-dict `:` qualified(type($output))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.sub` operands attr-dict `:` qualified(type($output))
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
 &lt;h4 id="operands-9">Operands:&lt;/h4>
@@ -382,11 +382,11 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>y&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
@@ -409,7 +409,7 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;h3 id="bgvsub_plain-heirbgvsubplainop">&lt;code>bgv.sub_plain&lt;/code> (heir::bgv::SubPlainOp)&lt;/h3>
 &lt;p>&lt;em>Subtraction operation between ciphertext-plaintext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `bgv.sub_plain` `(` operands `)` attr-dict `:` qualified(type($output))
+&lt;pre tabindex="0">&lt;code>operation ::= `bgv.sub_plain` operands attr-dict `:` `(` qualified(type(operands)) `)` `-&amp;gt;` qualified(type(results))
 &lt;/code>&lt;/pre>&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
 &lt;h4 id="operands-10">Operands:&lt;/h4>
 &lt;table>
@@ -421,11 +421,11 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>ciphertextInput&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>y&lt;/code>&lt;/td>
+&lt;td style="text-align:center">&lt;code>plaintextInput&lt;/code>&lt;/td>
 &lt;td>A type for RLWE plaintexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
@@ -750,7 +750,7 @@ and sums.&lt;/p>
 &lt;p>&lt;em>Logical NOT of two ciphertexts&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `cggi.not` operands attr-dict `:` qualified(type($output))
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Involution&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>Involution&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-5">Operands:&lt;/h4>
@@ -764,7 +764,7 @@ and sums.&lt;/p>
 &lt;tbody>
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
-&lt;td>A type for LWE ciphertexts&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
@@ -779,7 +779,7 @@ and sums.&lt;/p>
 &lt;tbody>
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
-&lt;td>A type for LWE ciphertexts&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
@@ -3879,51 +3879,6 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="openfhemul_and_relin-heiropenfhemulandrelinop">&lt;code>openfhe.mul_and_relin&lt;/code> (heir::openfhe::MulAndRelinOp)&lt;/h3>
-&lt;p>&lt;em>OpenFHE mul operation of two ciphertexts followed by relinearization to the lowest level.&lt;/em>&lt;/p>
-&lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `openfhe.mul_and_relin` operands attr-dict `:` `(` type(operands) `)` `-&amp;gt;` type(results)
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
-&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
-&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-6">Operands:&lt;/h4>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">Operand&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>cryptoContext&lt;/code>&lt;/td>
-&lt;td>The CryptoContext required to perform homomorphic operations in OpenFHE.&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
-&lt;td>A type for RLWE ciphertexts&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
-&lt;td>A type for RLWE ciphertexts&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h4 id="results-6">Results:&lt;/h4>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">Result&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
-&lt;td>A type for RLWE ciphertexts&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
 &lt;h3 id="openfhemul_const-heiropenfhemulconstop">&lt;code>openfhe.mul_const&lt;/code> (heir::openfhe::MulConstOp)&lt;/h3>
 &lt;p>&lt;em>OpenFHE mul operation of a ciphertext and a constant.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
@@ -3931,7 +3886,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-7">Operands:&lt;/h4>
+&lt;h4 id="operands-6">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3954,7 +3909,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-7">Results:&lt;/h4>
+&lt;h4 id="results-6">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3973,6 +3928,51 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;p>&lt;em>OpenFHE mul operation of two ciphertexts without relinearization.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `openfhe.mul_no_relin` operands attr-dict `:` `(` type(operands) `)` `-&amp;gt;` type(results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-7">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>cryptoContext&lt;/code>&lt;/td>
+&lt;td>The CryptoContext required to perform homomorphic operations in OpenFHE.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-7">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="openfhemul-heiropenfhemulop">&lt;code>openfhe.mul&lt;/code> (heir::openfhe::MulOp)&lt;/h3>
+&lt;p>&lt;em>OpenFHE mul operation of two ciphertexts with relinearization.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `openfhe.mul` operands attr-dict `:` `(` type(operands) `)` `-&amp;gt;` type(results)
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
@@ -4014,51 +4014,6 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="openfhemul-heiropenfhemulop">&lt;code>openfhe.mul&lt;/code> (heir::openfhe::MulOp)&lt;/h3>
-&lt;p>&lt;em>OpenFHE mul operation of two ciphertexts with relinearization.&lt;/em>&lt;/p>
-&lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `openfhe.mul` operands attr-dict `:` `(` type(operands) `)` `-&amp;gt;` type(results)
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
-&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
-&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-9">Operands:&lt;/h4>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">Operand&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>cryptoContext&lt;/code>&lt;/td>
-&lt;td>The CryptoContext required to perform homomorphic operations in OpenFHE.&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
-&lt;td>A type for RLWE ciphertexts&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
-&lt;td>A type for RLWE ciphertexts&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h4 id="results-9">Results:&lt;/h4>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">Result&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
-&lt;td>A type for RLWE ciphertexts&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
 &lt;h3 id="openfhemul_plain-heiropenfhemulplainop">&lt;code>openfhe.mul_plain&lt;/code> (heir::openfhe::MulPlainOp)&lt;/h3>
 &lt;p>&lt;em>OpenFHE mul operation of a ciphertext and a plaintext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
@@ -4066,7 +4021,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-10">Operands:&lt;/h4>
+&lt;h4 id="operands-9">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -4089,7 +4044,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-10">Results:&lt;/h4>
+&lt;h4 id="results-9">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -4110,6 +4065,47 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `openfhe.negate` operands attr-dict `:` `(` type(operands) `)` `-&amp;gt;` type(results)
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-10">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>cryptoContext&lt;/code>&lt;/td>
+&lt;td>The CryptoContext required to perform homomorphic operations in OpenFHE.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>ciphertext&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-10">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="openfherelin-heiropenfherelinop">&lt;code>openfhe.relin&lt;/code> (heir::openfhe::RelinOp)&lt;/h3>
+&lt;p>&lt;em>OpenFHE relinearize operation of a ciphertext.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `openfhe.relin` operands attr-dict `:` `(` type(operands) `)` `-&amp;gt;` type(results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-11">Operands:&lt;/h4>
 &lt;table>
@@ -4145,54 +4141,13 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="openfherelin-heiropenfherelinop">&lt;code>openfhe.relin&lt;/code> (heir::openfhe::RelinOp)&lt;/h3>
-&lt;p>&lt;em>OpenFHE relinearize operation of a ciphertext.&lt;/em>&lt;/p>
-&lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `openfhe.relin` operands attr-dict `:` `(` type(operands) `)` `-&amp;gt;` type(results)
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
-&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
-&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-12">Operands:&lt;/h4>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">Operand&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>cryptoContext&lt;/code>&lt;/td>
-&lt;td>The CryptoContext required to perform homomorphic operations in OpenFHE.&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>ciphertext&lt;/code>&lt;/td>
-&lt;td>A type for RLWE ciphertexts&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h4 id="results-12">Results:&lt;/h4>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">Result&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
-&lt;td>A type for RLWE ciphertexts&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
 &lt;h3 id="openfherot-heiropenfherotop">&lt;code>openfhe.rot&lt;/code> (heir::openfhe::RotOp)&lt;/h3>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `openfhe.rot` operands attr-dict `:` `(` type(operands) `)` `-&amp;gt;` type(results)
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-13">Operands:&lt;/h4>
+&lt;h4 id="operands-12">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -4215,7 +4170,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-13">Results:&lt;/h4>
+&lt;h4 id="results-12">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -4237,7 +4192,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-14">Operands:&lt;/h4>
+&lt;h4 id="operands-13">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -4256,7 +4211,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-14">Results:&lt;/h4>
+&lt;h4 id="results-13">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -4278,7 +4233,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-15">Operands:&lt;/h4>
+&lt;h4 id="operands-14">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -4301,7 +4256,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-15">Results:&lt;/h4>
+&lt;h4 id="results-14">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -5657,7 +5612,56 @@ generator polynomial, including zeroes.&lt;/p>
 &lt;td>ranked tensor of integer values&lt;/td>
 &lt;/tr>
 &lt;/tbody>
-&lt;/table></description></item><item><title>Docs: Secret</title><link>https://heir.dev/docs/dialects/secret/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/secret/</guid><description>
+&lt;/table></description></item><item><title>Docs: RNS</title><link>https://heir.dev/docs/dialects/rns/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/rns/</guid><description>
+&lt;h2 id="rns-types">RNS types&lt;/h2>
+&lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
+&lt;h3 id="rnstype">RNSType&lt;/h3>
+&lt;p>A residue number system representation&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>!rns.rns&amp;lt;
+::llvm::ArrayRef&amp;lt;mlir::Type&amp;gt; # basisTypes
+&amp;gt;
+&lt;/code>&lt;/pre>&lt;h4 id="parameters">Parameters:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Parameter&lt;/th>
+&lt;th style="text-align:center">C++ type&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">basisTypes&lt;/td>
+&lt;td style="text-align:center">&lt;code>::llvm::ArrayRef&amp;lt;mlir::Type&amp;gt;&lt;/code>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="rns-ops">RNS ops&lt;/h2>
+&lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
+&lt;h2 id="rns-additional-definitions">RNS additional definitions&lt;/h2>
+&lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
+&lt;h1 id="typeinterface-definitions">TypeInterface definitions&lt;/h1>
+&lt;h2 id="rnsbasistypeinterface-rnsbasistypeinterface">RNSBasisTypeInterface (&lt;code>RNSBasisTypeInterface&lt;/code>)&lt;/h2>
+&lt;p>This interface is required for a type to be used as a parameter
+to an &lt;code>rns&lt;/code> type.&lt;/p>
+&lt;h3 id="methods">Methods:&lt;/h3>
+&lt;h4 id="iscompatiblewith">&lt;code>isCompatibleWith&lt;/code>&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" style="background-color:#f8f8f8;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-c++" data-lang="c++">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#204a87;font-weight:bold">bool&lt;/span> &lt;span style="color:#000">isCompatibleWith&lt;/span>&lt;span style="color:#000;font-weight:bold">(&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">::&lt;/span>&lt;span style="color:#000">mlir&lt;/span>&lt;span style="color:#ce5c00;font-weight:bold">::&lt;/span>&lt;span style="color:#000">Type&lt;/span> &lt;span style="color:#000">otherRnsBasisType&lt;/span>&lt;span style="color:#000;font-weight:bold">);&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Returns true if this type is compatible with another type in the
+same RNS basis. In particular, the set of types used for a single
+RNS basis are never equal as types, but instead have some common
+attribute that must be checked here. For example, an RNS type where
+the basis types are polynomials would return true if the two types
+are both polynomial types, even if they have different coefficient
+moduli.&lt;/p>
+&lt;p>&lt;code>isCompatibleWith&lt;/code> must be both commutative and associative, in the sense
+that &lt;code>type1.isCompatibleWith(type2)&lt;/code> if and only if
+&lt;code>type2.isCompatibleWith(type1)&lt;/code>, and further
+&lt;code>type2.isCompatibleWith(type3)&lt;/code> if and only if
+&lt;code>type1.isCompatibleWith(type3)&lt;/code>.&lt;/p>
+&lt;p>NOTE: This method &lt;em>must&lt;/em> be implemented by the user.&lt;/p></description></item><item><title>Docs: Secret</title><link>https://heir.dev/docs/dialects/secret/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/secret/</guid><description>
 &lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
 &lt;p>Secret is a dialect for computations that operate on encrypted data.&lt;/p>
 &lt;p>Secret is intended to serve as a scheme-agnostic front-end for the HEIR
@@ -8003,7 +8007,7 @@ declarations, &lt;code>vector&amp;lt;0x42xi32&amp;gt;&lt;/code> is invalid becau
 &lt;/tr>
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
-&lt;td>An encrypted Boolean corresponding to tfhe-rs&amp;rsquo;s FHEBool type&lt;/td>
+&lt;td>eb-like&lt;/td>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
@@ -8018,7 +8022,7 @@ declarations, &lt;code>vector&amp;lt;0x42xi32&amp;gt;&lt;/code> is invalid becau
 &lt;tbody>
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
-&lt;td>An encrypted Boolean corresponding to tfhe-rs&amp;rsquo;s FHEBool type&lt;/td>
+&lt;td>eb-like&lt;/td>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
