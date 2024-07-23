@@ -19,4 +19,20 @@ def SetDefaultParameters : Pass<"cggi-set-default-parameters"> {
   let dependentDialects = ["mlir::heir::cggi::CGGIDialect"];
 }
 
+def BooleanLineVectorizer : Pass<"cggi-boolean-line-vectorize"> {
+  let summary = "Group different logic gates with the packed API";
+  let description = [{
+    This pass groups indepentend logic gates into a single call of the packed
+    operations.
+
+    Pass is intended for the `FPT` tfhe-rs API.
+  }];
+
+  let dependentDialects = [
+    "tensor::TensorDialect",
+  ];
+
+  let dependentDialects = ["mlir::heir::cggi::CGGIDialect"];
+}
+
 #endif  // LIB_DIALECT_CGGI_TRANSFORMS_PASSES_TD_

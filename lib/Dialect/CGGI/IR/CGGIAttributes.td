@@ -3,6 +3,14 @@
 
 include "lib/Dialect/CGGI/IR/CGGIDialect.td"
 include "mlir/IR/AttrTypeBase.td"
+include "mlir/IR/BuiltinDialect.td"
+include "mlir/IR/CommonAttrConstraints.td"
+
+class CGGI_Attr<string name, string attrMnemonic, list<Trait> traits = []>
+    : AttrDef<CGGI_Dialect, name, traits> {
+  let mnemonic = attrMnemonic;
+  let assemblyFormat = "`<` struct(params) `>`";
+}
 
 def CGGI_CGGIParams : AttrDef<CGGI_Dialect, "CGGIParams"> {
   let mnemonic = "cggi_params";
@@ -21,5 +29,21 @@ def CGGI_CGGIParams : AttrDef<CGGI_Dialect, "CGGIParams"> {
 
   let assemblyFormat = "`<` struct(params) `>`";
 }
+
+def CGGIGate_Attr : CGGI_Attr<"CGGIGate", "cggi_gate"> {
+  let summary = "An Attribute containing an array of strings to store bool gates";
+
+  let description = [{
+    Attribute to store what kind of Boolean gate we are working on
+  }];
+
+  let parameters = (ins
+      ArrayRefParameter<"mlir::StringAttr">: $gate);
+
+  let assemblyFormat = "`<` $gate `>`";
+}
+
+
+
 
 #endif  // LIB_DIALECT_CGGI_IR_CGGIATTRIBUTES_TD_

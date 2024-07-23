@@ -28,4 +28,5 @@ def TfheRustBool_ServerKey : TfheRustBool_Type<"ServerKey", "server_key", [PassB
   let summary = "The boolean server key required to perform homomorphic operations.";
 }
 
+
 #endif  // LIB_DIALECT_TFHERUSTBOOL_IR_TFHERUSTBOOLTYPES_TD_
