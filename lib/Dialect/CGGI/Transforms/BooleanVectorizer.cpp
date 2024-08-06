@@ -124,15 +124,15 @@ bool tryBoolVectorizeBlock(Block *block, MLIRContext &context) {
       for (auto *op : bucket) {
         std::string gate_str =
             llvm::TypeSwitch<Operation *, std::string>(op)
-                .Case<cggi::AndOp>([](AndOp op) { return std::string("and"); })
+                .Case<cggi::AndOp>([](AndOp op) { return std::string("AND"); })
                 .Case<cggi::NandOp>(
-                    [](NandOp op) { return std::string("nand"); })
-                .Case<cggi::XorOp>([](XorOp op) { return std::string("xor"); })
+                    [](NandOp op) { return std::string("NAND"); })
+                .Case<cggi::XorOp>([](XorOp op) { return std::string("XOR"); })
                 .Case<cggi::XNorOp>(
-                    [](XNorOp op) { return std::string("xnor"); })
-                .Case<cggi::OrOp>([](OrOp op) { return std::string("or"); })
-                .Case<cggi::NorOp>([](NorOp op) { return std::string("nor"); })
-                .Default([](Operation *) { return std::string("nor"); });
+                    [](XNorOp op) { return std::string("XNOR"); })
+                .Case<cggi::OrOp>([](OrOp op) { return std::string("OR"); })
+                .Case<cggi::NorOp>([](NorOp op) { return std::string("NOR"); })
+                .Default([](Operation *) { return std::string("error"); });
 
         vectorizedGateOperands.push_back(StringAttr::get(&context, gate_str));
       }

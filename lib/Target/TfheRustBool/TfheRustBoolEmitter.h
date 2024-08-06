@@ -71,6 +71,7 @@ class TfheRustBoolEmitter {
   LogicalResult printOperation(NotOp op);
   LogicalResult printOperation(XorOp op);
   LogicalResult printOperation(XnorOp op);
+  LogicalResult printOperation(PackedOp op);
 
   // Helpers for above
   LogicalResult printSksMethod(::mlir::Value result, ::mlir::Value sks,
@@ -79,6 +80,7 @@ class TfheRustBoolEmitter {
                                SmallVector<std::string> operandTypes = {});
   LogicalResult printBinaryOp(::mlir::Value result, ::mlir::Value lhs,
                               ::mlir::Value rhs, std::string_view op);
+  std::string checkOrigin(::mlir::Value result);
 
   // Emit a TfheRustBool type
   LogicalResult emitType(Type type);

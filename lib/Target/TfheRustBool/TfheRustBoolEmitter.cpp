@@ -6,6 +6,7 @@
 #include <numeric>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "lib/Analysis/SelectVariableNames/SelectVariableNames.h"
 #include "lib/Dialect/TfheRustBool/IR/TfheRustBoolDialect.h"
@@ -92,7 +93,7 @@ LogicalResult TfheRustBoolEmitter::translate(Operation &op) {
           .Case<memref::AllocOp, memref::LoadOp, memref::StoreOp>(
               [&](auto op) { return printOperation(op); })
           // TfheRustBool ops
-          .Case<AndOp, NandOp, OrOp, NorOp, NotOp, XorOp, XnorOp,
+          .Case<AndOp, NandOp, OrOp, NorOp, NotOp, XorOp, XnorOp, PackedOp,
                 CreateTrivialOp>([&](auto op) { return printOperation(op); })
           // Tensor ops
           .Case<tensor::ExtractOp, tensor::FromElementsOp>(
@@ -229,7 +230,7 @@ LogicalResult TfheRustBoolEmitter::printSksMethod(
     os << variableNames->getNameForValue(sks) << "." << op << "_packed(";
     os << commaSeparatedValues(nonSksOperands, [&](Value value) {
       auto *prefix = "&";
-      auto suffix = "";
+      auto *suffix = "";
       // First check if a DefiningOp exists
       // if not: comes from function definition
       mlir::Operation *opParent = value.getDefiningOp();
@@ -247,31 +248,30 @@ LogicalResult TfheRustBoolEmitter::printSksMethod(
     });
     os << ");\n";
     return success();
-
-  } else {
-    emitAssignPrefix(result);
-
-    auto operandTypesIt = operandTypes.begin();
-    os << variableNames->getNameForValue(sks) << "." << op << "(";
-    os << commaSeparatedValues(nonSksOperands, [&](Value value) {
-      auto *prefix = value.getType().hasTrait<PassByReference>() ? "&" : "";
-      // First check if a DefiningOp exists
-      // if not: comes from function definition
-      mlir::Operation *op = value.getDefiningOp();
-      if (op) {
-        auto reference_predicate =
-            isa<tensor::ExtractOp>(op) || isa<memref::LoadOp>(op);
-        prefix = reference_predicate ? "" : prefix;
-      } else {
-        prefix = "";
-      }
-
-      return prefix + variableNames->getNameForValue(value) +
-             (!operandTypes.empty() ? " as " + *operandTypesIt++ : "");
-    });
-    os << ");\n";
-    return success();
   }
+
+  emitAssignPrefix(result);
+
+  auto *operandTypesIt = operandTypes.begin();
+  os << variableNames->getNameForValue(sks) << "." << op << "(";
+  os << commaSeparatedValues(nonSksOperands, [&](Value value) {
+    auto *prefix = value.getType().hasTrait<PassByReference>() ? "&" : "";
+    // First check if a DefiningOp exists
+    // if not: comes from function definition
+    mlir::Operation *op = value.getDefiningOp();
+    if (op) {
+      auto referencePredicate =
+          isa<tensor::ExtractOp>(op) || isa<memref::LoadOp>(op);
+      prefix = referencePredicate ? "" : prefix;
+    } else {
+      prefix = "";
+    }
+
+    return prefix + variableNames->getNameForValue(value) +
+           (!operandTypes.empty() ? " as " + *operandTypesIt++ : "");
+  });
+  os << ");\n";
+  return success();
 }
 
 LogicalResult TfheRustBoolEmitter::printOperation(CreateTrivialOp op) {
@@ -410,7 +410,7 @@ LogicalResult TfheRustBoolEmitter::printOperation(memref::StoreOp op) {
   // Note: we may not need to clone all the time, but the BTreeMap stores
   // Ciphertexts, not &Ciphertexts. This is because results computed inside for
   // loops will not live long enough.
-  auto suffix = ".clone()";
+  const auto *suffix = ".clone()";
   os << variableNames->getNameForValue(op.getValueToStore()) << suffix
      << ");\n";
   return success();
@@ -459,11 +459,11 @@ LogicalResult TfheRustBoolEmitter::printOperation(tensor::FromElementsOp op) {
   emitAssignPrefix(op.getResult());
   os << "vec![" << commaSeparatedValues(op.getOperands(), [&](Value value) {
     // Check if block argument, if so, clone.
-    auto cloneStr = isa<BlockArgument>(value) ? ".clone()" : "";
+    const auto *cloneStr = isa<BlockArgument>(value) ? ".clone()" : "";
     // Get the name of defining operation its dialect
-    auto tfhe_op =
+    auto tfheOp =
         value.getDefiningOp()->getDialect()->getNamespace() == "tfhe_rust_bool";
-    auto prefix = tfhe_op ? "&" : "";
+    const auto *prefix = tfheOp ? "&" : "";
     return std::string(prefix) + variableNames->getNameForValue(value) +
            cloneStr;
   }) << "];\n";
@@ -505,6 +505,54 @@ LogicalResult TfheRustBoolEmitter::printOperation(XnorOp op) {
                         {op.getLhs(), op.getRhs()}, "xnor");
 }
 
+LogicalResult TfheRustBoolEmitter::printOperation(PackedOp op) {
+  emitAssignPrefix(op.getResult());
+  os << variableNames->getNameForValue(op.getServerKey()) << ".packed_gates(\n";
+
+  // Print the gate array
+  auto attrList =
+      op.getGates()
+          .getGate();  // Is of type
+                       // ::mlir::heir::tfhe_rust_bool::TfheRustBoolGateAttr
+
+  os << "&vec![";
+  for (auto gate : attrList) {
+    os << "Gate::" << gate.data() << ", ";
+  }
+  os << "],\n";
+
+  // os << commaSeparatedValues({op.getLhs(), op.getRhs()}, [&](Value value) {
+  //       auto *prefix = "&";
+  //       auto *suffix = "";
+  //       // First check if a DefiningOp exists
+  //       // if not: comes from function definition
+  //       mlir::Operation *opParent = value.getDefiningOp();
+  //       if (opParent) {
+  //         if (!isa<tensor::FromElementsOp>(value.getDefiningOp()) &&
+  //             !isa<tensor::ExtractOp>(opParent))
+  //           prefix = "";
+
+  //       } else {
+  //         prefix = "&";
+  //         suffix = "_ref";
+  //       }
+
+  //       return prefix + variableNames->getNameForValue(value) + suffix;
+  //     });
+
+  os << commaSeparatedValues({op.getLhs(), op.getRhs()}, [&](Value value) {
+    std::string prefix;
+    std::string suffix;
+
+    tie(prefix, suffix) = checkOrigin(value);
+    return prefix + variableNames->getNameForValue(value) + suffix;
+  });
+
+  os << ");\n";
+
+  return success();
+}
+
 FailureOr<std::string> TfheRustBoolEmitter::convertType(Type type) {
   // Note: these are probably not the right type names to use exactly, and
   // they will need to chance to the right values once we try to compile it
@@ -540,6 +588,25 @@ LogicalResult TfheRustBoolEmitter::emitType(Type type) {
   }
   os << result;
   return success();
+}
+
+std::pair<std::string, std::string> checkOrigin(Value value) {
+  auto *prefix = "&";
+  auto *suffix = "";
+  // First check if a DefiningOp exists
+  // if not: comes from function definition
+  mlir::Operation *opParent = value.getDefiningOp();
+  if (opParent) {
+    if (!isa<tensor::FromElementsOp>(value.getDefiningOp()) &&
+        !isa<tensor::ExtractOp>(opParent))
+      prefix = "";
+
+  } else {
+    prefix = "&";
+    suffix = "_ref";
+  }
+
+  return std::make_pair<prefix, suffix>;
 }
 
 TfheRustBoolEmitter::TfheRustBoolEmitter(raw_ostream &os,
