@@ -286,8 +286,9 @@ operation computes &lt;code>barret_reduce x = x - floor(x * floor(b / q) / b) * 
 &lt;p>&lt;em>Addition operation between ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `bgv.add` operands attr-dict `:` qualified(type($output))
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>Commutative&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
-&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -326,7 +327,9 @@ operation computes &lt;code>barret_reduce x = x - floor(x * floor(b / q) / b) * 
 &lt;p>&lt;em>Addition operation between ciphertext-plaintext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `bgv.add_plain` operands attr-dict `:` functional-type(operands, results)
-&lt;/code>&lt;/pre>&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-1">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -373,7 +376,9 @@ vector and a rotate into the zero-th index.&lt;/p>
 corresponding to a ranked tensor type, and this op&amp;rsquo;s return type is
 inferred to have the &lt;code>underlying_type&lt;/code> corresponding to the element type of
 that tensor type.&lt;/p>
-&lt;p>Traits: &lt;code>SameOperandsAndResultRings&lt;/code>&lt;/p>
+&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>SameOperandsAndResultRings&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-2">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -451,8 +456,9 @@ that tensor type.&lt;/p>
 &lt;p>&lt;em>Multiplication operation between ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `bgv.mul` operands attr-dict `:` functional-type(operands, results)
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>Commutative&lt;/code>, &lt;code>InferTypeOpAdaptor&lt;/code>, &lt;code>SameOperandsAndResultRings&lt;/code>, &lt;code>SameTypeOperands&lt;/code>&lt;/p>
-&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>InferTypeOpAdaptor&lt;/code>, &lt;code>SameOperandsAndResultRings&lt;/code>, &lt;code>SameTypeOperands&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-4">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -491,7 +497,9 @@ that tensor type.&lt;/p>
 &lt;p>&lt;em>Multiplication operation between ciphertext-plaintext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `bgv.mul_plain` operands attr-dict `:` functional-type(operands, results)
-&lt;/code>&lt;/pre>&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-5">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -530,8 +538,9 @@ that tensor type.&lt;/p>
 &lt;p>&lt;em>Negate the coefficients of the ciphertext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `bgv.negate` operands attr-dict `:` qualified(type($output))
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
-&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Involution&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-6">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -614,7 +623,9 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;p>&lt;em>Rotate the coefficients of the ciphertext using a Galois automorphism.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `bgv.rotate` operands attr-dict `:` qualified(type($input))
-&lt;/code>&lt;/pre>&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="attributes-2">Attributes:&lt;/h4>
 &lt;table>
 &lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
@@ -654,8 +665,9 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;p>&lt;em>Subtraction operation between ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `bgv.sub` operands attr-dict `:` qualified(type($output))
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
-&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-9">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -694,7 +706,9 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;p>&lt;em>Subtraction operation between ciphertext-plaintext.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `bgv.sub_plain` operands attr-dict `:` functional-type(operands, results)
-&lt;/code>&lt;/pre>&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-10">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -733,6 +747,33 @@ listing the powers of &lt;code>s&lt;/code> at each position of the array. For ex
 &lt;p>A dialect for types and operations in the CGGI cryptosystem&lt;/p>
 &lt;h2 id="cggi-attributes">CGGI attributes&lt;/h2>
 &lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
+&lt;h3 id="cggigateattr">CGGIGateAttr&lt;/h3>
+&lt;p>An Attribute containing an array of strings to store bool gates&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>#cggi.cggi_gate&amp;lt;
+::llvm::ArrayRef&amp;lt;mlir::StringAttr&amp;gt; # gate
+&amp;gt;
+&lt;/code>&lt;/pre>&lt;p>This attributes stores a list of string identifiers for Boolean gates.&lt;/p>
+&lt;p>This used in the &lt;code>cggi.packed&lt;/code> operation to indicate the boolean gate that applies pairwise between elements of two ciphertext arrays. For example,&lt;/p>
+&lt;p>%0 = cggi.packed %a, %b {gates = #cggi.cggi_gate&amp;lt;&amp;ldquo;and&amp;rdquo;, &amp;ldquo;xor&amp;rdquo;&amp;gt;} : tensor&amp;lt;2x!lwe.lwe_ciphertext&amp;gt;&lt;/p>
+&lt;p>applies an &amp;ldquo;and&amp;rdquo; gate between the first elements of %a and %b and an xor gate between the second elements.&lt;/p>
+&lt;h4 id="parameters">Parameters:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Parameter&lt;/th>
+&lt;th style="text-align:center">C++ type&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">gate&lt;/td>
+&lt;td style="text-align:center">&lt;code>::llvm::ArrayRef&amp;lt;mlir::StringAttr&amp;gt;&lt;/code>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
 &lt;h3 id="cggiparamsattr">CGGIParamsAttr&lt;/h3>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>#cggi.cggi_params&amp;lt;
@@ -744,7 +785,7 @@ unsigned, # ksk_noise_variance
 unsigned, # ksk_gadget_base_log
 unsigned # ksk_gadget_num_levels
 &amp;gt;
-&lt;/code>&lt;/pre>&lt;h4 id="parameters">Parameters:&lt;/h4>
+&lt;/code>&lt;/pre>&lt;h4 id="parameters-1">Parameters:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -1233,13 +1274,17 @@ return (
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="cggixnor-heircggixnorop">&lt;code>cggi.xnor&lt;/code> (heir::cggi::XNorOp)&lt;/h3>
-&lt;p>&lt;em>Logical XNOR of two ciphertexts.&lt;/em>&lt;/p>
+&lt;h3 id="cggipacked_gates-heircggipackedop">&lt;code>cggi.packed_gates&lt;/code> (heir::cggi::PackedOp)&lt;/h3>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `cggi.xnor` operands attr-dict `:` qualified(type($output))
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `cggi.packed_gates` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="attributes-4">Attributes:&lt;/h4>
+&lt;table>
+&lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>gates&lt;/code>&lt;/td>&lt;td>::mlir::heir::cggi::CGGIGateAttr&lt;/td>&lt;td>An Attribute containing an array of strings to store bool gates&lt;/td>&lt;/tr>
+&lt;/table>
 &lt;h4 id="operands-9">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -1274,10 +1319,10 @@ return (
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="cggixor-heircggixorop">&lt;code>cggi.xor&lt;/code> (heir::cggi::XorOp)&lt;/h3>
-&lt;p>&lt;em>Logical XOR of two ciphertexts.&lt;/em>&lt;/p>
+&lt;h3 id="cggixnor-heircggixnorop">&lt;code>cggi.xnor&lt;/code> (heir::cggi::XNorOp)&lt;/h3>
+&lt;p>&lt;em>Logical XNOR of two ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `cggi.xor` operands attr-dict `:` qualified(type($output))
+&lt;pre tabindex="0">&lt;code>operation ::= `cggi.xnor` operands attr-dict `:` qualified(type($output))
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
@@ -1312,6 +1357,513 @@ return (
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
 &lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="cggixor-heircggixorop">&lt;code>cggi.xor&lt;/code> (heir::cggi::XorOp)&lt;/h3>
+&lt;p>&lt;em>Logical XOR of two ciphertexts.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `cggi.xor` operands attr-dict `:` qualified(type($output))
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-11">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-11">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table></description></item><item><title>Docs: CKKS</title><link>https://heir.dev/docs/dialects/ckks/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/ckks/</guid><description>
+&lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
+&lt;p>The CKKS dialect defines the types and operations of the CKKS cryptosystem.&lt;/p>
+&lt;h2 id="ckks-ops">CKKS ops&lt;/h2>
+&lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
+&lt;h3 id="ckksadd-heirckksaddop">&lt;code>ckks.add&lt;/code> (heir::ckks::AddOp)&lt;/h3>
+&lt;p>&lt;em>Addition operation between ciphertexts.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.add` operands attr-dict `:` qualified(type($output))
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckksadd_plain-heirckksaddplainop">&lt;code>ckks.add_plain&lt;/code> (heir::ckks::AddPlainOp)&lt;/h3>
+&lt;p>&lt;em>Addition operation between ciphertext-plaintext.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.add_plain` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-1">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>ciphertextInput&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>plaintextInput&lt;/code>&lt;/td>
+&lt;td>A type for RLWE plaintexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-1">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckksextract-heirckksextractop">&lt;code>ckks.extract&lt;/code> (heir::ckks::ExtractOp)&lt;/h3>
+&lt;p>&lt;em>Extract the i-th element of a ciphertext.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.extract` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>While this operation is costly to compute in FHE, we represent it so we can
+implement efficient lowerings and folders.&lt;/p>
+&lt;p>This op can be implemented as a plaintext multiplication with a one-hot
+vector and a rotate into the zero-th index.&lt;/p>
+&lt;p>An extraction op&amp;rsquo;s input ciphertext type is asserted to have an &lt;code>underlying_type&lt;/code>
+corresponding to a ranked tensor type, and this op&amp;rsquo;s return type is
+inferred to have the &lt;code>underlying_type&lt;/code> corresponding to the element type of
+that tensor type.&lt;/p>
+&lt;p>Traits: &lt;code>SameOperandsAndResultRings&lt;/code>&lt;/p>
+&lt;h4 id="operands-2">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>offset&lt;/code>&lt;/td>
+&lt;td>signless integer or index&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-2">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckksmul-heirckksmulop">&lt;code>ckks.mul&lt;/code> (heir::ckks::MulOp)&lt;/h3>
+&lt;p>&lt;em>Multiplication operation between ciphertexts.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.mul` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>InferTypeOpAdaptor&lt;/code>, &lt;code>SameOperandsAndResultRings&lt;/code>, &lt;code>SameTypeOperands&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-3">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-3">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckksmul_plain-heirckksmulplainop">&lt;code>ckks.mul_plain&lt;/code> (heir::ckks::MulPlainOp)&lt;/h3>
+&lt;p>&lt;em>Multiplication operation between ciphertext-plaintext.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.mul_plain` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-4">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>ciphertextInput&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>plaintextInput&lt;/code>&lt;/td>
+&lt;td>A type for RLWE plaintexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-4">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckksnegate-heirckksnegateop">&lt;code>ckks.negate&lt;/code> (heir::ckks::NegateOp)&lt;/h3>
+&lt;p>&lt;em>Negate the coefficients of the ciphertext.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.negate` operands attr-dict `:` qualified(type($output))
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Involution&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-5">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-5">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckksrelinearize-heirckksrelinearizeop">&lt;code>ckks.relinearize&lt;/code> (heir::ckks::RelinearizeOp)&lt;/h3>
+&lt;p>&lt;em>Relinearize the ciphertext.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.relinearize` operands attr-dict `:` qualified(type($input)) `-&amp;gt;` qualified(type($output))
+&lt;/code>&lt;/pre>&lt;p>This op takes integer array attributes &lt;code>from_basis&lt;/code> and &lt;code>to_basis&lt;/code> that are
+used to indicate the key basis from which and to which the ciphertext is
+encrypted against. A ciphertext is canonically encrypted against key basis
+&lt;code>(1, s)&lt;/code>. After a multiplication, its size will increase and the basis will be
+&lt;code>(1, s, s^2)&lt;/code>. The array that represents the key basis is constructed by
+listing the powers of &lt;code>s&lt;/code> at each position of the array. For example, &lt;code>(1, s, s^2)&lt;/code> corresponds to &lt;code>[0, 1, 2]&lt;/code>, while &lt;code>(1, s^2)&lt;/code> corresponds to &lt;code>[0, 2]&lt;/code>.&lt;/p>
+&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>InferTypeOpAdaptor&lt;/code>, &lt;code>SameOperandsAndResultRings&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="attributes">Attributes:&lt;/h4>
+&lt;table>
+&lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>from_basis&lt;/code>&lt;/td>&lt;td>::mlir::DenseI32ArrayAttr&lt;/td>&lt;td>i32 dense array attribute&lt;/td>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>to_basis&lt;/code>&lt;/td>&lt;td>::mlir::DenseI32ArrayAttr&lt;/td>&lt;td>i32 dense array attribute&lt;/td>&lt;/tr>
+&lt;/table>
+&lt;h4 id="operands-6">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-6">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckksrescale-heirckksrescaleop">&lt;code>ckks.rescale&lt;/code> (heir::ckks::RescaleOp)&lt;/h3>
+&lt;p>&lt;em>Rescales the ciphertext, which is the CKKS version of modulus switching in BGV/BFV.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.rescale` operands attr-dict `:` qualified(type($input)) `-&amp;gt;` qualified(type($output))
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="attributes-1">Attributes:&lt;/h4>
+&lt;table>
+&lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>to_ring&lt;/code>&lt;/td>&lt;td>::mlir::polynomial::RingAttr&lt;/td>&lt;td>an attribute specifying a polynomial ring&lt;/td>&lt;/tr>
+&lt;/table>
+&lt;h4 id="operands-7">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-7">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckksrotate-heirckksrotateop">&lt;code>ckks.rotate&lt;/code> (heir::ckks::RotateOp)&lt;/h3>
+&lt;p>&lt;em>Rotate the coefficients of the ciphertext using a Galois automorphism.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.rotate` operands attr-dict `:` qualified(type($input))
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="attributes-2">Attributes:&lt;/h4>
+&lt;table>
+&lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>offset&lt;/code>&lt;/td>&lt;td>::mlir::IntegerAttr&lt;/td>&lt;td>An Attribute containing a integer value&lt;/td>&lt;/tr>
+&lt;/table>
+&lt;h4 id="operands-8">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-8">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckkssub-heirckkssubop">&lt;code>ckks.sub&lt;/code> (heir::ckks::SubOp)&lt;/h3>
+&lt;p>&lt;em>Subtraction operation between ciphertexts.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.sub` operands attr-dict `:` qualified(type($output))
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>InferTypeOpInterface&lt;/code>&lt;/p>
+&lt;h4 id="operands-9">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-9">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="ckkssub_plain-heirckkssubplainop">&lt;code>ckks.sub_plain&lt;/code> (heir::ckks::SubPlainOp)&lt;/h3>
+&lt;p>&lt;em>Subtraction operation between ciphertext-plaintext.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `ckks.sub_plain` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-10">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>ciphertextInput&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>plaintextInput&lt;/code>&lt;/td>
+&lt;td>A type for RLWE plaintexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-10">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table></description></item><item><title>Docs: Comb</title><link>https://heir.dev/docs/dialects/comb/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/comb/</guid><description>
@@ -3554,6 +4106,47 @@ an LWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
+&lt;h3 id="lweradd-heirlweraddop">&lt;code>lwe.radd&lt;/code> (heir::lwe::RAddOp)&lt;/h3>
+&lt;p>&lt;em>Add two RLWE ciphertexts&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `lwe.radd` operands attr-dict `:` type($output)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-3">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-3">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
 &lt;h3 id="lwerlwe_decode-heirlwerlwedecodeop">&lt;code>lwe.rlwe_decode&lt;/code> (heir::lwe::RLWEDecodeOp)&lt;/h3>
 &lt;p>&lt;em>Decode an RLWE plaintext to an underlying type&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
@@ -3567,7 +4160,7 @@ an LWE plaintext value that can then be encrypted.&lt;/p>
 &lt;tr>&lt;td>&lt;code>encoding&lt;/code>&lt;/td>&lt;td>::mlir::Attribute&lt;/td>&lt;td>An attribute describing encoded RLWE plaintexts via coefficients. or An attribute describing encoded RLWE plaintexts via evaluations at fixed points. or An attribute describing encoded RLWE plaintexts via the rounded inverse canonical embedding.&lt;/td>&lt;/tr>
 &lt;tr>&lt;td>&lt;code>ring&lt;/code>&lt;/td>&lt;td>::mlir::polynomial::RingAttr&lt;/td>&lt;td>an attribute specifying a polynomial ring&lt;/td>&lt;/tr>
 &lt;/table>
-&lt;h4 id="operands-3">Operands:&lt;/h4>
+&lt;h4 id="operands-4">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3582,7 +4175,7 @@ an LWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-3">Results:&lt;/h4>
+&lt;h4 id="results-4">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3605,7 +4198,7 @@ an LWE plaintext value that can then be encrypted.&lt;/p>
 &lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-4">Operands:&lt;/h4>
+&lt;h4 id="operands-5">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3624,7 +4217,7 @@ an LWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-4">Results:&lt;/h4>
+&lt;h4 id="results-5">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3657,7 +4250,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;tr>&lt;td>&lt;code>encoding&lt;/code>&lt;/td>&lt;td>::mlir::Attribute&lt;/td>&lt;td>An attribute describing encoded RLWE plaintexts via coefficients. or An attribute describing encoded RLWE plaintexts via evaluations at fixed points. or An attribute describing encoded RLWE plaintexts via the rounded inverse canonical embedding.&lt;/td>&lt;/tr>
 &lt;tr>&lt;td>&lt;code>ring&lt;/code>&lt;/td>&lt;td>::mlir::polynomial::RingAttr&lt;/td>&lt;td>an attribute specifying a polynomial ring&lt;/td>&lt;/tr>
 &lt;/table>
-&lt;h4 id="operands-5">Operands:&lt;/h4>
+&lt;h4 id="operands-6">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3672,7 +4265,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-5">Results:&lt;/h4>
+&lt;h4 id="results-6">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3695,7 +4288,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-6">Operands:&lt;/h4>
+&lt;h4 id="operands-7">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3714,7 +4307,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-6">Results:&lt;/h4>
+&lt;h4 id="results-7">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3726,6 +4319,125 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="lwermul-heirlwermulop">&lt;code>lwe.rmul&lt;/code> (heir::lwe::RMulOp)&lt;/h3>
+&lt;p>&lt;em>Multiplies two RLWE ciphertexts&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `lwe.rmul` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>InferTypeOpAdaptor&lt;/code>, &lt;code>SameOperandsAndResultRings&lt;/code>, &lt;code>SameTypeOperands&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-8">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-8">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A type for RLWE ciphertexts&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="lwernegate-heirlwernegateop">&lt;code>lwe.rnegate&lt;/code> (heir::lwe::RNegateOp)&lt;/h3>
+&lt;p>&lt;em>Negate a RLWE ciphertexts&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `lwe.rnegate` operands attr-dict `:` type($output)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-9">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-9">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="lwersub-heirlwersubop">&lt;code>lwe.rsub&lt;/code> (heir::lwe::RSubOp)&lt;/h3>
+&lt;p>&lt;em>Subtract two RLWE ciphertexts&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `lwe.rsub` operands attr-dict `:` type($output)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>SameOperandsAndResultType&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-10">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-10">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>ciphertext-like&lt;/td>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
@@ -3741,7 +4453,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
 &lt;tr>&lt;td>&lt;code>params&lt;/code>&lt;/td>&lt;td>::mlir::heir::lwe::LWEParamsAttr&lt;/td>&lt;td>&lt;/td>&lt;/tr>
 &lt;/table>
-&lt;h4 id="operands-7">Operands:&lt;/h4>
+&lt;h4 id="operands-11">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3756,7 +4468,7 @@ an RLWE plaintext value that can then be encrypted.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-7">Results:&lt;/h4>
+&lt;h4 id="results-11">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3781,7 +4493,7 @@ does not keep track of types for you.&lt;/p>
 &lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-8">Operands:&lt;/h4>
+&lt;h4 id="operands-12">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3796,7 +4508,7 @@ does not keep track of types for you.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results-8">Results:&lt;/h4>
+&lt;h4 id="results-12">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -4636,27 +5348,56 @@ does not keep track of types for you.&lt;/p>
 &lt;td>A type for RLWE ciphertexts&lt;/td>
 &lt;/tr>
 &lt;/tbody>
-&lt;/table></description></item><item><title>Docs: PolyExt</title><link>https://heir.dev/docs/dialects/polyext/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/polyext/</guid><description>
+&lt;/table></description></item><item><title>Docs: Polynomial</title><link>https://heir.dev/docs/dialects/polynomial/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/polynomial/</guid><description>
+&lt;h2 id="polynomial-additional-definitions">Polynomial additional definitions&lt;/h2></description></item><item><title>Docs: Random</title><link>https://heir.dev/docs/dialects/random/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/random/</guid><description>
+&lt;h2 id="random-types">Random types&lt;/h2>
 &lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
-&lt;p>The PolyExt dialect is a place for &amp;ldquo;external&amp;rdquo; operations on
-&lt;code>mlir::polynomial::Polynomial&lt;/code>.&lt;/p>
-&lt;h2 id="polyext-ops">PolyExt ops&lt;/h2>
-&lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
-&lt;h3 id="poly_extcmod_switch-heirpoly_extcmodswitchop">&lt;code>poly_ext.cmod_switch&lt;/code> (heir::poly_ext::CModSwitchOp)&lt;/h3>
-&lt;p>&lt;em>Move polynomial into a ring with different &lt;code>cmod&lt;/code> by scaling polynomial coefficients proportionally&lt;/em>&lt;/p>
+&lt;h3 id="distributiontype">DistributionType&lt;/h3>
+&lt;p>A random distribution type&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `poly_ext.cmod_switch` $x attr-dict `:` type($x) `-&amp;gt;` type($output)
-&lt;/code>&lt;/pre>&lt;p>&lt;code>poly_ext.cmod_switch&lt;/code> &amp;ldquo;moves&amp;rdquo; polynomial $x$ from ring $Z/QZ[X]/(f(x))$ to the ring $Z/qZ[X]/(f(x))$.
-The move is done by scaling the polynomial coefficients by $q/Q$ and &amp;ldquo;rounding&amp;rdquo; so input
-and output coefficients are congruent modulo &lt;code>congruence_modulus&lt;/code> $t$.
-The resulting polynomial $\tilde{x} \approx (q/Q)x$ and $\tilde{x} \equiv x \mod t$.&lt;/p>
-&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
+&lt;pre tabindex="0">&lt;code>!random.distribution&amp;lt;
+::mlir::heir::random::Distribution # distribution_type
+&amp;gt;
+&lt;/code>&lt;/pre>&lt;p>A generic type, representing a specific random distribution type of either
+uniform or gaussian as an attribute ($distribution_type).&lt;/p>
+&lt;h4 id="parameters">Parameters:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Parameter&lt;/th>
+&lt;th style="text-align:center">C++ type&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">distribution_type&lt;/td>
+&lt;td style="text-align:center">&lt;code>::mlir::heir::random::Distribution&lt;/code>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="prngtype">PRNGType&lt;/h3>
+&lt;p>A pseudorandom number generator type&lt;/p>
+&lt;p>Syntax: &lt;code>!random.prng&lt;/code>&lt;/p>
+&lt;p>A type that provides pseudorandom number generator.&lt;/p>
+&lt;h2 id="random-ops">Random ops&lt;/h2>
+&lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
+&lt;h3 id="randomdiscrete_gaussian_distribution-heirrandomdiscretegaussiandistributionop">&lt;code>random.discrete_gaussian_distribution&lt;/code> (heir::random::DiscreteGaussianDistributionOp)&lt;/h3>
+&lt;p>&lt;em>Initializes the Discrete Gaussian Distribution&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `random.discrete_gaussian_distribution` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Initializes the Discrete Gaussian Distribution. The distribution is
+initialized with a mean and a standard deviation and pseudorandom generator
+that provides the source of the randomness.&lt;/p>
+&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="attributes">Attributes:&lt;/h4>
 &lt;table>
 &lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
-&lt;tr>&lt;td>&lt;code>congruence_modulus&lt;/code>&lt;/td>&lt;td>::mlir::IntegerAttr&lt;/td>&lt;td>An Attribute containing a integer value&lt;/td>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>mean&lt;/code>&lt;/td>&lt;td>::mlir::IntegerAttr&lt;/td>&lt;td>An Attribute containing a integer value&lt;/td>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>stddev&lt;/code>&lt;/td>&lt;td>::mlir::IntegerAttr&lt;/td>&lt;td>An Attribute containing a integer value whose value is non-negative&lt;/td>&lt;/tr>
 &lt;/table>
 &lt;h4 id="operands">Operands:&lt;/h4>
 &lt;table>
@@ -4668,8 +5409,8 @@ The resulting polynomial $\tilde{x} \approx (q/Q)x$ and $\tilde{x} \equiv x \mod
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align:center">&lt;code>x&lt;/code>&lt;/td>
-&lt;td>polynomial-like&lt;/td>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
+&lt;td>A pseudorandom number generator type&lt;/td>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
@@ -4684,11 +5425,146 @@ The resulting polynomial $\tilde{x} \approx (q/Q)x$ and $\tilde{x} \equiv x \mod
 &lt;tbody>
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
-&lt;td>polynomial-like&lt;/td>
+&lt;td>A random distribution type&lt;/td>
 &lt;/tr>
 &lt;/tbody>
-&lt;/table></description></item><item><title>Docs: Polynomial</title><link>https://heir.dev/docs/dialects/polynomial/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/polynomial/</guid><description>
-&lt;h2 id="polynomial-additional-definitions">Polynomial additional definitions&lt;/h2></description></item><item><title>Docs: RNS</title><link>https://heir.dev/docs/dialects/rns/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/rns/</guid><description>
+&lt;/table>
+&lt;h3 id="randomdiscrete_uniform_distribution-heirrandomdiscreteuniformdistributionop">&lt;code>random.discrete_uniform_distribution&lt;/code> (heir::random::DiscreteUniformDistributionOp)&lt;/h3>
+&lt;p>&lt;em>Initializes the Discrete Uniform Distribution&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `random.discrete_uniform_distribution` $input `{` `range` `=` `[` $min `,` $max `]` `}` attr-dict `:` `(` qualified(type($input)) `)` `-&amp;gt;` type($output)
+&lt;/code>&lt;/pre>&lt;p>Initializes the Discrete Uniform Distribution. The distribution is
+initialized with a minimum and a maximum value and pseudo random generator
+that provides the source of the randomness. The distribution is inclusive of
+the minimum and exclusive of the maximum.&lt;/p>
+&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="attributes-1">Attributes:&lt;/h4>
+&lt;table>
+&lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>min&lt;/code>&lt;/td>&lt;td>::mlir::IntegerAttr&lt;/td>&lt;td>An Attribute containing a integer value&lt;/td>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>max&lt;/code>&lt;/td>&lt;td>::mlir::IntegerAttr&lt;/td>&lt;td>An Attribute containing a integer value&lt;/td>&lt;/tr>
+&lt;/table>
+&lt;h4 id="operands-1">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
+&lt;td>A pseudorandom number generator type&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-1">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A random distribution type&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="randominit_prng-heirrandominitop">&lt;code>random.init_prng&lt;/code> (heir::random::InitOp)&lt;/h3>
+&lt;p>&lt;em>Initializes the pseudorandom number generator with a seed.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `random.init_prng` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Initializes the PRNG with a seed. The seed is dynamically provided due to
+protocols that agree on shared randomness. The PRNG is used to initialized
+the random distributions such as the discrete gaussian distribution and the
+discrete uniform distribution. This initialization also takes as input a
+number of bits that are generated for each number value sampled (num_bits).
+For instance, a num_bits of 32 will mean that distributions will generate a
+32-bit integer value. We expect that the seed initialization is done statically
+and globally once per thread for all distributions; however, if multiple threads are
+generating randomness, then seed initialization should be done per thread;
+otherwise there is no guarantee of consistent behavior. Thread safety is so
+far not considered.&lt;/p>
+&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="attributes-2">Attributes:&lt;/h4>
+&lt;table>
+&lt;tr>&lt;th>Attribute&lt;/th>&lt;th>MLIR Type&lt;/th>&lt;th>Description&lt;/th>&lt;/tr>
+&lt;tr>&lt;td>&lt;code>num_bits&lt;/code>&lt;/td>&lt;td>::mlir::IntegerAttr&lt;/td>&lt;td>An Attribute containing a integer value&lt;/td>&lt;/tr>
+&lt;/table>
+&lt;h4 id="operands-2">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>seed&lt;/code>&lt;/td>
+&lt;td>signless-integer-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-2">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>A pseudorandom number generator type&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="randomsample-heirrandomsampleop">&lt;code>random.sample&lt;/code> (heir::random::SampleOp)&lt;/h3>
+&lt;p>&lt;em>Samples from a distribution&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `random.sample` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Samples from the distribution to obtain a random value
+or tensor of values.&lt;/p>
+&lt;h4 id="operands-3">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>input&lt;/code>&lt;/td>
+&lt;td>A random distribution type&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-3">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>signless-integer-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table></description></item><item><title>Docs: RNS</title><link>https://heir.dev/docs/dialects/rns/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://heir.dev/docs/dialects/rns/</guid><description>
 &lt;h2 id="rns-types">RNS types&lt;/h2>
 &lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
 &lt;h3 id="rnstype">RNSType&lt;/h3>
@@ -5533,6 +6409,24 @@ using the boolean parameter set.&lt;/p>
 &lt;p>See &lt;a href="https://github.com/zama-ai/tfhe-rs">https://github.com/zama-ai/tfhe-rs&lt;/a>&lt;/p>
 &lt;h2 id="tfherustbool-types">TfheRustBool types&lt;/h2>
 &lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
+&lt;h3 id="booleangateandtype">BooleanGateAndType&lt;/h3>
+&lt;p>Enum placeholder to define the binary gateAnd to perform as homomoprhic operation.&lt;/p>
+&lt;p>Syntax: &lt;code>!tfhe_rust_bool.bin_gateAnd&lt;/code>&lt;/p>
+&lt;h3 id="booleangatenandtype">BooleanGateNandType&lt;/h3>
+&lt;p>Enum placeholder to define the binary gateNand to perform as homomoprhic operation.&lt;/p>
+&lt;p>Syntax: &lt;code>!tfhe_rust_bool.bin_gateNand&lt;/code>&lt;/p>
+&lt;h3 id="booleangatenortype">BooleanGateNorType&lt;/h3>
+&lt;p>Enum placeholder to define the binary gateNor to perform as homomoprhic operation.&lt;/p>
+&lt;p>Syntax: &lt;code>!tfhe_rust_bool.bin_gateNor&lt;/code>&lt;/p>
+&lt;h3 id="booleangateortype">BooleanGateOrType&lt;/h3>
+&lt;p>Enum placeholder to define the binary gateOr to perform as homomoprhic operation.&lt;/p>
+&lt;p>Syntax: &lt;code>!tfhe_rust_bool.bin_gateOr&lt;/code>&lt;/p>
+&lt;h3 id="booleangatexnortype">BooleanGateXnorType&lt;/h3>
+&lt;p>Enum placeholder to define the binary gateXnor to perform as homomoprhic operation.&lt;/p>
+&lt;p>Syntax: &lt;code>!tfhe_rust_bool.bin_gateXnor&lt;/code>&lt;/p>
+&lt;h3 id="booleangatexortype">BooleanGateXorType&lt;/h3>
+&lt;p>Enum placeholder to define the binary gateXor to perform as homomoprhic operation.&lt;/p>
+&lt;p>Syntax: &lt;code>!tfhe_rust_bool.bin_gateXor&lt;/code>&lt;/p>
 &lt;h3 id="encryptedbooltype">EncryptedBoolType&lt;/h3>
 &lt;p>An encrypted Boolean corresponding to tfhe-rs&amp;rsquo;s FHEBool type&lt;/p>
 &lt;p>Syntax: &lt;code>!tfhe_rust_bool.eb&lt;/code>&lt;/p>
@@ -5541,14 +6435,54 @@ using the boolean parameter set.&lt;/p>
 &lt;p>Syntax: &lt;code>!tfhe_rust_bool.server_key&lt;/code>&lt;/p>
 &lt;h2 id="tfherustbool-ops">TfheRustBool ops&lt;/h2>
 &lt;!-- Autogenerated by mlir-tblgen; don't manually edit -->
-&lt;h3 id="tfhe_rust_booland-heirtfhe_rust_boolandop">&lt;code>tfhe_rust_bool.and&lt;/code> (heir::tfhe_rust_bool::AndOp)&lt;/h3>
-&lt;p>&lt;em>Logical AND of two TFHE-rs Bool ciphertexts.&lt;/em>&lt;/p>
+&lt;h3 id="tfhe_rust_boolcreate_trivial-heirtfhe_rust_boolcreatetrivialop">&lt;code>tfhe_rust_bool.create_trivial&lt;/code> (heir::tfhe_rust_bool::CreateTrivialOp)&lt;/h3>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.and` operands attr-dict `:` functional-type(operands, results)
+&lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.create_trivial` operands attr-dict `:` functional-type(operands, results)
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>serverKey&lt;/code>&lt;/td>
+&lt;td>The boolean server key required to perform homomorphic operations.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>value&lt;/code>&lt;/td>
+&lt;td>1-bit signless integer&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>An encrypted Boolean corresponding to tfhe-rs&amp;rsquo;s FHEBool type&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="tfhe_rust_booland-heirtfhe_rust_boolandop">&lt;code>tfhe_rust_bool.and&lt;/code> (heir::tfhe_rust_bool::AndOp)&lt;/h3>
+&lt;p>&lt;em>Logical AND of two TFHE-rs Bool ciphertexts.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.and` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-1">Operands:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -5571,46 +6505,6 @@ using the boolean parameter set.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="results">Results:&lt;/h4>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">Result&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
-&lt;td>eb-like&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="tfhe_rust_boolcreate_trivial-heirtfhe_rust_boolcreatetrivialop">&lt;code>tfhe_rust_bool.create_trivial&lt;/code> (heir::tfhe_rust_bool::CreateTrivialOp)&lt;/h3>
-&lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.create_trivial` operands attr-dict `:` functional-type(operands, results)
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
-&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
-&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
-&lt;h4 id="operands-1">Operands:&lt;/h4>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">Operand&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>serverKey&lt;/code>&lt;/td>
-&lt;td>The boolean server key required to perform homomorphic operations.&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">&lt;code>value&lt;/code>&lt;/td>
-&lt;td>1-bit signless integer&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
 &lt;h4 id="results-1">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
@@ -5622,7 +6516,7 @@ using the boolean parameter set.&lt;/p>
 &lt;tbody>
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
-&lt;td>An encrypted Boolean corresponding to tfhe-rs&amp;rsquo;s FHEBool type&lt;/td>
+&lt;td>eb-like&lt;/td>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
@@ -5678,7 +6572,7 @@ using the boolean parameter set.&lt;/p>
 &lt;p>&lt;em>Logical NAND of two TFHE-rs Bool ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.nand` operands attr-dict `:` functional-type(operands, results)
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-3">Operands:&lt;/h4>
@@ -5723,7 +6617,7 @@ using the boolean parameter set.&lt;/p>
 &lt;p>&lt;em>Logical NOR of two TFHE-rs Bool ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.nor` operands attr-dict `:` functional-type(operands, results)
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-4">Operands:&lt;/h4>
@@ -5808,7 +6702,7 @@ using the boolean parameter set.&lt;/p>
 &lt;p>&lt;em>Logical OR of two TFHE-rs Bool ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
 &lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.or` operands attr-dict `:` functional-type(operands, results)
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-6">Operands:&lt;/h4>
@@ -5849,10 +6743,9 @@ using the boolean parameter set.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="tfhe_rust_boolxnor-heirtfhe_rust_boolxnorop">&lt;code>tfhe_rust_bool.xnor&lt;/code> (heir::tfhe_rust_bool::XnorOp)&lt;/h3>
-&lt;p>&lt;em>Logical XNOR of two TFHE-rs Bool ciphertexts.&lt;/em>&lt;/p>
+&lt;h3 id="tfhe_rust_boolpacked-heirtfhe_rust_boolpackedop">&lt;code>tfhe_rust_bool.packed&lt;/code> (heir::tfhe_rust_bool::PackedOp)&lt;/h3>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.xnor` operands attr-dict `:` functional-type(operands, results)
+&lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.packed` operands attr-dict `:` functional-type(operands, results)
 &lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
@@ -5868,6 +6761,10 @@ using the boolean parameter set.&lt;/p>
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>serverKey&lt;/code>&lt;/td>
 &lt;td>The boolean server key required to perform homomorphic operations.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>gates&lt;/code>&lt;/td>
+&lt;td>Enum placeholder to define the binary gateAnd to perform as homomoprhic operation. or Enum placeholder to define the binary gateOr to perform as homomoprhic operation. or Enum placeholder to define the binary gateXor to perform as homomoprhic operation. or Enum placeholder to define the binary gateNand to perform as homomoprhic operation. or Enum placeholder to define the binary gateNor to perform as homomoprhic operation. or Enum placeholder to define the binary gateXnor to perform as homomoprhic operation.&lt;/td>
 &lt;/tr>
 &lt;tr>
 &lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
@@ -5894,11 +6791,11 @@ using the boolean parameter set.&lt;/p>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="tfhe_rust_boolxor-heirtfhe_rust_boolxorop">&lt;code>tfhe_rust_bool.xor&lt;/code> (heir::tfhe_rust_bool::XorOp)&lt;/h3>
-&lt;p>&lt;em>Logical XOR of two TFHE-rs Bool ciphertexts.&lt;/em>&lt;/p>
+&lt;h3 id="tfhe_rust_boolxnor-heirtfhe_rust_boolxnorop">&lt;code>tfhe_rust_bool.xnor&lt;/code> (heir::tfhe_rust_bool::XnorOp)&lt;/h3>
+&lt;p>&lt;em>Logical XNOR of two TFHE-rs Bool ciphertexts.&lt;/em>&lt;/p>
 &lt;p>Syntax:&lt;/p>
-&lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.xor` operands attr-dict `:` functional-type(operands, results)
-&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.xnor` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
 &lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
 &lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
 &lt;h4 id="operands-8">Operands:&lt;/h4>
@@ -5925,6 +6822,51 @@ using the boolean parameter set.&lt;/p>
 &lt;/tbody>
 &lt;/table>
 &lt;h4 id="results-8">Results:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Result&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>output&lt;/code>&lt;/td>
+&lt;td>eb-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="tfhe_rust_boolxor-heirtfhe_rust_boolxorop">&lt;code>tfhe_rust_bool.xor&lt;/code> (heir::tfhe_rust_bool::XorOp)&lt;/h3>
+&lt;p>&lt;em>Logical XOR of two TFHE-rs Bool ciphertexts.&lt;/em>&lt;/p>
+&lt;p>Syntax:&lt;/p>
+&lt;pre tabindex="0">&lt;code>operation ::= `tfhe_rust_bool.xor` operands attr-dict `:` functional-type(operands, results)
+&lt;/code>&lt;/pre>&lt;p>Traits: &lt;code>AlwaysSpeculatableImplTrait&lt;/code>, &lt;code>Commutative&lt;/code>, &lt;code>Elementwise&lt;/code>, &lt;code>Scalarizable&lt;/code>, &lt;code>Tensorizable&lt;/code>, &lt;code>Vectorizable&lt;/code>&lt;/p>
+&lt;p>Interfaces: &lt;code>ConditionallySpeculatable&lt;/code>, &lt;code>InferTypeOpInterface&lt;/code>, &lt;code>NoMemoryEffect (MemoryEffectOpInterface)&lt;/code>&lt;/p>
+&lt;p>Effects: &lt;code>MemoryEffects::Effect{}&lt;/code>&lt;/p>
+&lt;h4 id="operands-9">Operands:&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Operand&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>serverKey&lt;/code>&lt;/td>
+&lt;td>The boolean server key required to perform homomorphic operations.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>lhs&lt;/code>&lt;/td>
+&lt;td>eb-like&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">&lt;code>rhs&lt;/code>&lt;/td>
+&lt;td>eb-like&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="results-9">Results:&lt;/h4>
 &lt;table>
 &lt;thead>
 &lt;tr>
