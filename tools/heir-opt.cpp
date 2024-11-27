@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "lib/Dialect/Arith/Conversions/ArithToModArith/ArithToModArith.h"
 #include "lib/Dialect/BGV/Conversions/BGVToLWE/BGVToLWE.h"
 #include "lib/Dialect/BGV/Conversions/BGVToOpenfhe/BGVToOpenfhe.h"
 #include "lib/Dialect/BGV/IR/BGVDialect.h"
@@ -19,10 +20,9 @@
 #include "lib/Dialect/LWE/IR/LWEDialect.h"
 #include "lib/Dialect/LWE/Transforms/Passes.h"
 #include "lib/Dialect/LinAlg/Conversions/LinalgToTensorExt/LinalgToTensorExt.h"
-#include "lib/Dialect/ModArith/Conversions/ArithToModArith/ArithToModArith.h"
 #include "lib/Dialect/ModArith/Conversions/ModArithToArith/ModArithToArith.h"
 #include "lib/Dialect/ModArith/IR/ModArithDialect.h"
-#include "lib/Dialect/ModArith/Transforms/ArithToNewMod.h"
+#include "lib/Dialect/ModArith/Transforms/Passes.h"
 #include "lib/Dialect/Openfhe/IR/OpenfheDialect.h"
 #include "lib/Dialect/Openfhe/Transforms/Passes.h"
 #include "lib/Dialect/Polynomial/Conversions/PolynomialToModArith/PolynomialToModArith.h"
@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
   // Dialect conversion passes in HEIR
   mod_arith::registerModArithToArithPasses();
   mod_arith::registerArithToModArithPasses();
-  mod_arith::registerArithToNewMod();
+  mod_arith::registerConvertToMacPass();
   bgv::registerBGVToLWEPasses();
   bgv::registerBGVToOpenfhePasses();
   ckks::registerCKKSToOpenfhePasses();

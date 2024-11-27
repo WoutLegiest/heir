@@ -168,20 +168,20 @@ void registerTosaToBooleanTfhePipeline(const std::string &yosysFilesPath,
                                   /*abcBooleanGates=*/false);
 
         // CGGI to Tfhe-Rust exit dialect
-        // pm.addPass(createCGGIToTfheRust());
+        pm.addPass(createCGGIToTfheRust());
         // CSE must be run before canonicalizer, so that redundant ops are
         // cleared before the canonicalizer hoists TfheRust ops.
-        // pm.addPass(createCSEPass());
-        // pm.addPass(createCanonicalizerPass());
+        pm.addPass(createCSEPass());
+        pm.addPass(createCanonicalizerPass());
 
-        // // Cleanup loads and stores
-        // pm.addPass(createExpandCopyPass(
-        //     ExpandCopyPassOptions{.disableAffineLoop = true}));
-        // pm.addPass(memref::createFoldMemRefAliasOpsPass());
-        // pm.addPass(createForwardStoreToLoad());
-        // pm.addPass(createCanonicalizerPass());
-        // pm.addPass(createCSEPass());
-        // pm.addPass(createSCCPPass());
+        // Cleanup loads and stores
+        pm.addPass(createExpandCopyPass(
+            ExpandCopyPassOptions{.disableAffineLoop = true}));
+        pm.addPass(memref::createFoldMemRefAliasOpsPass());
+        pm.addPass(createForwardStoreToLoad());
+        pm.addPass(createCanonicalizerPass());
+        pm.addPass(createCSEPass());
+        pm.addPass(createSCCPPass());
       });
 }
 
