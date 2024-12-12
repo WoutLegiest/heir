@@ -98,14 +98,14 @@ struct ConvertConstant : public OpConversionPattern<mlir::arith::ConstantOp> {
   }
 };
 
-struct ConvertExt : public OpConversionPattern<mlir::arith::ExtSIOp> {
+struct ConvertExt : public OpConversionPattern<mlir::arith::ExtUIOp> {
   ConvertExt(mlir::MLIRContext *context)
-      : OpConversionPattern<mlir::arith::ExtSIOp>(context) {}
+      : OpConversionPattern<mlir::arith::ExtUIOp>(context) {}
 
   using OpConversionPattern::OpConversionPattern;
 
   LogicalResult matchAndRewrite(
-      ::mlir::arith::ExtSIOp op, OpAdaptor adaptor,
+      ::mlir::arith::ExtUIOp op, OpAdaptor adaptor,
       ConversionPatternRewriter &rewriter) const override {
     ImplicitLocOpBuilder b(op.getLoc(), rewriter);
 
