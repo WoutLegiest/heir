@@ -90,6 +90,9 @@ at the [pull request review stage](#pull-request-review-flow).
     pre-commit run --all
    ```
 
+Note that all packages in `requirements-dev.txt` must be installed to run
+pre-commit successfully.
+
 1. Make sure tests are passing with the following:
 
    ```bash
