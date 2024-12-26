@@ -111,8 +111,8 @@ LogicalResult TfheRustHLEmitter::translate(Operation &op) {
           .Case<memref::AllocOp, memref::LoadOp, memref::StoreOp>(
               [&](auto op) { return printOperation(op); })
           // TfheRust ops
-          .Case<AddOp, MulOp, CreateTrivialOp>(
-              [&](auto op) { return printOperation(op); })
+          .Case<AddOp, SubOp, MulOp, ScalarRightShiftOp, CastOp,
+                CreateTrivialOp>([&](auto op) { return printOperation(op); })
           // Tensor ops
           .Case<tensor::ExtractOp, tensor::FromElementsOp>(
               [&](auto op) { return printOperation(op); })
@@ -363,8 +363,9 @@ LogicalResult TfheRustHLEmitter::printBinaryOp(::mlir::Value result,
                                                ::mlir::Value rhs,
                                                std::string_view op) {
   emitAssignPrefix(result);
-  os << variableNames->getNameForValue(lhs) << " " << op << " "
-     << variableNames->getNameForValue(rhs) << ";\n";
+
+  os << checkOrigin(lhs) << variableNames->getNameForValue(lhs) << " " << op
+     << " " << checkOrigin(rhs) << variableNames->getNameForValue(rhs) << ";\n";
   return success();
 }
 
@@ -557,6 +558,25 @@ LogicalResult TfheRustHLEmitter::printOperation(MulOp op) {
   return printBinaryOp(op.getResult(), op.getLhs(), op.getRhs(), "*");
 }
 
+LogicalResult TfheRustHLEmitter::printOperation(SubOp op) {
+  return printBinaryOp(op.getResult(), op.getLhs(), op.getRhs(), "-");
+}
+
+LogicalResult TfheRustHLEmitter::printOperation(ScalarRightShiftOp op) {
+  return printBinaryOp(op.getResult(), op.getCiphertext(), op.getShiftAmount(),
+                       ">>");
+}
+
+LogicalResult TfheRustHLEmitter::printOperation(CastOp op) {
+  auto resultTypeSize = getTfheRustBitWidth(op.getOutput().getType());
+
+  emitAssignPrefix(op.getResult());
+  os << "FheUint" << resultTypeSize << "::cast_from(";
+  os << variableNames->getNameForValue(op.getCiphertext()) << ".clone());\n";
+
+  return success();
+}
+
 FailureOr<std::string> TfheRustHLEmitter::convertType(Type type) {
   // Note: these are probably not the right type names to use exactly, and
   // they will need to chance to the right values once we try to compile it
@@ -609,24 +629,21 @@ LogicalResult TfheRustHLEmitter::emitType(Type type) {
   return success();
 }
 
-std::pair<std::string, std::string> TfheRustHLEmitter::checkOrigin(
-    Value value) {
+std::string TfheRustHLEmitter::checkOrigin(Value value) {
   std::string prefix = "&";
-  std::string suffix = "";
   // First check if a DefiningOp exists
   // if not: comes from function definition
   mlir::Operation *opParent = value.getDefiningOp();
   if (opParent) {
     if (!isa<tensor::FromElementsOp>(opParent) &&
         !isa<tensor::ExtractOp>(opParent))
-      prefix = "";
+      prefix = "&";
 
   } else {
-    prefix = "&";
-    suffix = "_ref";
+    prefix = "";
   }
 
-  return std::make_pair(prefix, suffix);
+  return prefix;
 }
 
 TfheRustHLEmitter::TfheRustHLEmitter(raw_ostream &os,

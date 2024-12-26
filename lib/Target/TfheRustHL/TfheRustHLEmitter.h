@@ -69,7 +69,10 @@ class TfheRustHLEmitter {
   LogicalResult printOperation(memref::LoadOp op);
   LogicalResult printOperation(memref::StoreOp op);
   LogicalResult printOperation(AddOp op);
+  LogicalResult printOperation(SubOp op);
   LogicalResult printOperation(MulOp op);
+  LogicalResult printOperation(ScalarRightShiftOp op);
+  LogicalResult printOperation(CastOp op);
   LogicalResult printOperation(CreateTrivialOp op);
   LogicalResult printOperation(BitAndOp op);
 
@@ -80,7 +83,7 @@ class TfheRustHLEmitter {
                             SmallVector<std::string> operandTypes = {});
   LogicalResult printBinaryOp(::mlir::Value result, ::mlir::Value lhs,
                               ::mlir::Value rhs, std::string_view op);
-  std::pair<std::string, std::string> checkOrigin(Value value);
+  std::string checkOrigin(Value value);
 
   // Emit a TfheRust type
   LogicalResult emitType(Type type);
