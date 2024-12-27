@@ -2,7 +2,10 @@
 
 #include "lib/Dialect/CGGI/IR/CGGIDialect.h"
 #include "lib/Dialect/CGGI/IR/CGGIOps.h"
+#include "lib/Dialect/LWE/IR/LWEOps.h"
+#include "lib/Dialect/LWE/IR/LWETypes.h"
 #include "lib/Utils/ConversionUtils.h"
+#include "llvm/include/llvm/Support/Debug.h"           // from @llvm-project
 #include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"  // from @llvm-project
 #include "mlir/include/mlir/Transforms/DialectConversion.h"  // from @llvm-project
 
@@ -27,6 +30,20 @@ static Type convertArithLikeType(ShapedType type, MLIRContext *ctx) {
   return type;
 }
 
+// static Value buildConstantOp(OpBuilder &builder, Type resultTypes,
+//                           ValueRange inputs, Location loc) {
+//   assert(inputs.size() == 1);
+
+//   llvm::dbgs() << "Building constant op\n";
+//   auto lweType = lwe::LWECiphertextType::get(loc->getContext(),
+//   lwe::UnspecifiedBitFieldEncodingAttr::get(
+//                                          loc->getContext(),
+//                                          inputs[0].getType().getIntOrFloatBitWidth()),lwe::LWEParamsAttr());
+
+//   return builder.create<cggi::CreateTrivialOp>(loc, lweType, inputs[0]);
+
+// }
+
 // Remove this class if no type conversions are necessary
 class ArithToCGGITypeConverter : public TypeConverter {
  public:
@@ -41,35 +58,7 @@ class ArithToCGGITypeConverter : public TypeConverter {
     addConversion([ctx, this](ShapedType type) -> Type {
       return convertArithLikeType(type, ctx);
     });
-  }
-
-  Type getLWECiphertextForInt(MLIRContext *ctx, Type type) const {
-    if (IntegerType intType = dyn_cast<IntegerType>(type)) {
-      if (intType.getWidth() == 1) {
-        return lwe::LWECiphertextType::get(
-            ctx, lwe::UnspecifiedBitFieldEncodingAttr::get(ctx, 1),
-            lwe::LWEParamsAttr());
-      }
-      return MemRefType::get(
-          {intType.getWidth()},
-          getLWECiphertextForInt(ctx, IntegerType::get(ctx, 1)));
-    }
-
-    ShapedType shapedType = dyn_cast<ShapedType>(type);
-    assert(shapedType &&
-           "expected shaped secret type for a non-integer secret");
-    assert(isa<IntegerType>(shapedType.getElementType()) &&
-           "expected integer element types for shaped secret types");
-    auto elementType = getLWECiphertextForInt(ctx, shapedType.getElementType());
-    SmallVector<int64_t> newShape = {shapedType.getShape().begin(),
-                                     shapedType.getShape().end()};
-    if (auto elementShape = dyn_cast<ShapedType>(elementType)) {
-      // Flatten the element shape with the original shape
-      newShape.insert(newShape.end(), elementShape.getShape().begin(),
-                      elementShape.getShape().end());
-      return MemRefType::get(newShape, elementShape.getElementType());
-    }
-    return shapedType.cloneWith(newShape, elementType);
+    // addTargetMaterialization(buildConstantOp);
   }
 };
 
@@ -83,20 +72,34 @@ class SecretTypeConverter : public TypeConverter {
   int minBitWidth;
 };
 
-// FIXME: rename to Convert<OpName>Op
-// struct ConvertFooOp : public OpConversionPattern<FooOp> {
-//   ConvertFooOp(mlir::MLIRContext *context)
-//       : OpConversionPattern<FooOp>(context) {}
+struct ConvertConstantOp : public OpConversionPattern<mlir::arith::ConstantOp> {
+  ConvertConstantOp(mlir::MLIRContext *context)
+      : OpConversionPattern<mlir::arith::ConstantOp>(context) {}
 
-//   using OpConversionPattern::OpConversionPattern;
+  using OpConversionPattern::OpConversionPattern;
 
-//   LogicalResult matchAndRewrite(
-//       FooOp op, OpAdaptor adaptor,
-//       ConversionPatternRewriter &rewriter) const override {
-//     // FIXME: implement
-//     return failure();
-//   }
-// };
+  LogicalResult matchAndRewrite(
+      mlir::arith::ConstantOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
+    if (isa<IndexType>(op.getValue().getType())) {
+      return failure();
+    }
+    ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+
+    auto intValue = cast<IntegerAttr>(op.getValue()).getValue().getSExtValue();
+    auto inputValue = mlir::IntegerAttr::get(op.getType(), intValue);
+
+    auto encoding = lwe::UnspecifiedBitFieldEncodingAttr::get(
+        op->getContext(), op.getValue().getType().getIntOrFloatBitWidth());
+    auto lweType = lwe::LWECiphertextType::get(op->getContext(), encoding,
+                                               lwe::LWEParamsAttr());
+
+    auto encrypt = b.create<cggi::CreateTrivialOp>(lweType, inputValue);
+
+    rewriter.replaceOp(op, encrypt);
+    return success();
+  }
+};
 
 struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
   void runOnOperation() override {
@@ -109,10 +112,16 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
     target.addLegalDialect<cggi::CGGIDialect>();
     target.addIllegalDialect<mlir::arith::ArithDialect>();
 
-    patterns.add<ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
-                 ConvertBinOp<mlir::arith::MulIOp, cggi::MulOp>,
-                 ConvertBinOp<mlir::arith::SubIOp, cggi::SubOp> >(typeConverter,
-                                                                  context);
+    target.addDynamicallyLegalOp<mlir::arith::ConstantOp>(
+        [](mlir::arith::ConstantOp op) {
+          return isa<IndexType>(op.getValue().getType());
+        });
+
+    patterns
+        .add<ConvertConstantOp, ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
+             ConvertBinOp<mlir::arith::MulIOp, cggi::MulOp>,
+             ConvertBinOp<mlir::arith::SubIOp, cggi::SubOp>>(typeConverter,
+                                                             context);
 
     addStructuralConversionPatterns(typeConverter, patterns, target);
 
