@@ -43,7 +43,7 @@ class TfheRustEmitter {
 
  private:
   // Whether to execute levelled operations in parallel.
-  bool useLevels_;
+  bool useLevels;
 
   /// Output stream to emit to.
   raw_indented_ostream os;
@@ -53,7 +53,7 @@ class TfheRustEmitter {
   SelectVariableNames *variableNames;
 
   // Server key arg to create default values when initializing arrays
-  std::string serverKeyArg_;
+  std::string serverKeyArg;
 
   // Functions for printing individual ops
   LogicalResult printOperation(::mlir::ModuleOp op);

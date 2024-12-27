@@ -16,6 +16,7 @@ namespace mlir {
 namespace heir {
 namespace tfhe_rust {
 
+// TODO: Fix this function to match the list of implemented ops
 LogicalResult canEmitFuncForTfheRust(func::FuncOp &funcOp) {
   WalkResult failIfInterrupted = funcOp.walk([&](Operation *op) {
     return TypeSwitch<Operation *, WalkResult>(op)
@@ -42,7 +43,8 @@ LogicalResult canEmitFuncForTfheRust(func::FuncOp &funcOp) {
           llvm::errs()
               << "Skipping function " << funcOp.getName()
               << " which cannot be emitted because it has an unsupported op: "
-              << *op << "\n";
+              << *op << "\n"
+              << "Origin: TfheRust/Utils.cpp:canEmitFuncForTfheRust\n";
           return WalkResult::interrupt();
         });
   });
