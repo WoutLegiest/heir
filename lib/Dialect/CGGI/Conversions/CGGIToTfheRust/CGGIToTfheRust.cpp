@@ -450,7 +450,7 @@ class CGGIToTfheRust : public impl::CGGIToTfheRustBase<CGGIToTfheRust> {
     patterns
         .add<AddServerKeyArg, ConvertAndOp, ConvertEncodeOp, ConvertLut2Op,
              ConvertLut3Op, ConvertNotOp, ConvertOrOp, ConvertTrivialEncryptOp,
-             ConvertXorOp, ConvertAny<memref::AllocOp>,
+             ConvertXorOp, ConvertTrivialOp, ConvertAny<memref::AllocOp>,
              ConvertAny<memref::DeallocOp>, ConvertAny<memref::StoreOp>,
              ConvertAny<memref::LoadOp>, ConvertAny<memref::SubViewOp>,
              ConvertAny<memref::CopyOp>, ConvertAny<tensor::FromElementsOp>,
