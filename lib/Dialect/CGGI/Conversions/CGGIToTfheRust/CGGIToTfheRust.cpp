@@ -364,6 +364,34 @@ struct ConvertTrivialEncryptOp
   }
 };
 
+struct ConvertTrivialOp : public OpConversionPattern<cggi::TrivialEncryptOp> {
+  ConvertTrivialOp(mlir::MLIRContext *context)
+      : OpConversionPattern<cggi::TrivialEncryptOp>(context, /*benefit=*/2) {}
+
+  using OpConversionPattern::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(
+      cggi::TrivialEncryptOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
+    FailureOr<Value> result = getContextualServerKey(op.getOperation());
+    if (failed(result)) return result;
+
+    Value serverKey = result.value();
+    lwe::EncodeOp encodeOp = op.getInput().getDefiningOp<lwe::EncodeOp>();
+    if (!encodeOp) {
+      return op.emitError() << "Expected input to TrivialEncrypt to be the "
+                               "result of an EncodeOp, but it was "
+                            << op.getInput().getDefiningOp()->getName();
+    }
+    auto outputType = encrytpedUIntTypeFromWidth(
+        getContext(), widthFromEncodingAttr(encodeOp.getEncoding()));
+    auto createTrivialOp = rewriter.create<tfhe_rust::CreateTrivialOp>(
+        op.getLoc(), outputType, serverKey, encodeOp.getInput());
+    rewriter.replaceOp(op, createTrivialOp);
+    return success();
+  }
+};
+
 struct ConvertEncodeOp : public OpConversionPattern<lwe::EncodeOp> {
   ConvertEncodeOp(mlir::MLIRContext *context)
       : OpConversionPattern<lwe::EncodeOp>(context) {}
@@ -420,7 +448,7 @@ class CGGIToTfheRust : public impl::CGGIToTfheRustBase<CGGIToTfheRust> {
     patterns
         .add<AddServerKeyArg, ConvertAndOp, ConvertEncodeOp, ConvertLut2Op,
              ConvertLut3Op, ConvertNotOp, ConvertOrOp, ConvertTrivialEncryptOp,
-             ConvertXorOp, ConvertAny<memref::AllocOp>,
+             ConvertXorOp, ConvertTrivialOp, ConvertAny<memref::AllocOp>,
              ConvertAny<memref::DeallocOp>, ConvertAny<memref::StoreOp>,
              ConvertAny<memref::LoadOp>, ConvertAny<memref::SubViewOp>,
              ConvertAny<memref::CopyOp>, ConvertAny<tensor::FromElementsOp>,
