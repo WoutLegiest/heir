@@ -302,4 +302,12 @@ def CGGI_ShiftLeftOp : CGGI_Op<"shl", [
   let summary = "Arithmetic shift to left of a ciphertexts by an integer.";
 }
 
+// Two options:
+// 1. Allow arith.constant and use an encryption op to bring it to the ciphertext space.
+// 2. Use a trivial op where the constant is embedded in the ciphertext.
+def CGGI_CreateTrivialOp : CGGI_Op<"create_trivial", [Pure]> {
+  let arguments = (ins Builtin_IntegerAttr:$value);
+  let results = (outs LWECiphertextLike:$output);
+}
+
 #endif  // LIB_DIALECT_CGGI_IR_CGGIOPS_TD_
