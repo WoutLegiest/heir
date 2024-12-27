@@ -5,8 +5,10 @@
 #include "lib/Dialect/LWE/IR/LWEOps.h"
 #include "lib/Dialect/LWE/IR/LWETypes.h"
 #include "lib/Utils/ConversionUtils.h"
-#include "llvm/include/llvm/Support/Debug.h"           // from @llvm-project
-#include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"  // from @llvm-project
+#include "llvm/include/llvm/Support/Debug.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/Affine/IR/AffineOps.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"    // from @llvm-project
+#include "mlir/include/mlir/Dialect/MemRef/IR/MemRef.h"  // from @llvm-project
 #include "mlir/include/mlir/Transforms/DialectConversion.h"  // from @llvm-project
 
 namespace mlir::heir::arith {
@@ -30,20 +32,6 @@ static Type convertArithLikeType(ShapedType type, MLIRContext *ctx) {
   return type;
 }
 
-// static Value buildConstantOp(OpBuilder &builder, Type resultTypes,
-//                           ValueRange inputs, Location loc) {
-//   assert(inputs.size() == 1);
-
-//   llvm::dbgs() << "Building constant op\n";
-//   auto lweType = lwe::LWECiphertextType::get(loc->getContext(),
-//   lwe::UnspecifiedBitFieldEncodingAttr::get(
-//                                          loc->getContext(),
-//                                          inputs[0].getType().getIntOrFloatBitWidth()),lwe::LWEParamsAttr());
-
-//   return builder.create<cggi::CreateTrivialOp>(loc, lweType, inputs[0]);
-
-// }
-
 // Remove this class if no type conversions are necessary
 class ArithToCGGITypeConverter : public TypeConverter {
  public:
@@ -51,11 +39,11 @@ class ArithToCGGITypeConverter : public TypeConverter {
     addConversion([](Type type) { return type; });
 
     // Convert Integer types to LWE ciphertext types
-    addConversion([ctx, this](IntegerType type) -> Type {
+    addConversion([ctx](IntegerType type) -> Type {
       return convertArithType(type, ctx);
     });
 
-    addConversion([ctx, this](ShapedType type) -> Type {
+    addConversion([ctx](ShapedType type) -> Type {
       return convertArithLikeType(type, ctx);
     });
     // addTargetMaterialization(buildConstantOp);
@@ -117,11 +105,24 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
           return isa<IndexType>(op.getValue().getType());
         });
 
-    patterns
-        .add<ConvertConstantOp, ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
-             ConvertBinOp<mlir::arith::MulIOp, cggi::MulOp>,
-             ConvertBinOp<mlir::arith::SubIOp, cggi::SubOp>>(typeConverter,
-                                                             context);
+    target.addDynamicallyLegalOp<
+        memref::AllocOp, memref::DeallocOp, memref::StoreOp, memref::SubViewOp,
+        memref::CopyOp, tensor::FromElementsOp, tensor::ExtractOp,
+        affine::AffineStoreOp, affine::AffineLoadOp>([&](Operation *op) {
+      return typeConverter.isLegal(op->getOperandTypes()) &&
+             typeConverter.isLegal(op->getResultTypes());
+    });
+
+    patterns.add<
+        ConvertConstantOp, ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
+        ConvertBinOp<mlir::arith::MulIOp, cggi::MulOp>,
+        ConvertBinOp<mlir::arith::SubIOp, cggi::SubOp>,
+        ConvertAny<memref::LoadOp>, ConvertAny<memref::AllocOp>,
+        ConvertAny<memref::DeallocOp>, ConvertAny<memref::StoreOp>,
+        ConvertAny<memref::SubViewOp>, ConvertAny<memref::CopyOp>,
+        ConvertAny<tensor::FromElementsOp>, ConvertAny<tensor::ExtractOp>,
+        ConvertAny<affine::AffineStoreOp>, ConvertAny<affine::AffineLoadOp> >(
+        typeConverter, context);
 
     addStructuralConversionPatterns(typeConverter, patterns, target);
 
