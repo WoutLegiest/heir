@@ -18,11 +18,15 @@
 #include "lib/Dialect/TfheRust/IR/TfheRustTypes.h"
 #include "lib/Target/TfheRust/Utils.h"
 #include "lib/Target/TfheRustHL/TfheRustHLTemplates.h"
+#include "lib/Transforms/MemrefToArith/Utils.h"
 #include "lib/Utils/TargetUtils.h"
 #include "llvm/include/llvm/ADT/TypeSwitch.h"          // from @llvm-project
 #include "llvm/include/llvm/Support/FormatVariadic.h"  // from @llvm-project
 #include "llvm/include/llvm/Support/raw_ostream.h"     // from @llvm-project
+#include "mlir/include/mlir/Dialect/Affine/Analysis/AffineAnalysis.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Affine/IR/AffineOps.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/Affine/IR/AffineValueMap.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/Affine/Utils.h"      // from @llvm-project
 #include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"    // from @llvm-projectx
 #include "mlir/include/mlir/Dialect/Func/IR/FuncOps.h"   // from @llvm-project
 #include "mlir/include/mlir/Dialect/MemRef/IR/MemRef.h"  // from @llvm-project
@@ -32,6 +36,7 @@
 #include "mlir/include/mlir/IR/BuiltinTypeInterfaces.h"  // from @llvm-project
 #include "mlir/include/mlir/IR/BuiltinTypes.h"           // from @llvm-project
 #include "mlir/include/mlir/IR/DialectRegistry.h"        // from @llvm-project
+#include "mlir/include/mlir/IR/ImplicitLocOpBuilder.h"   // from @llvm-project
 #include "mlir/include/mlir/IR/Types.h"                  // from @llvm-project
 #include "mlir/include/mlir/IR/Value.h"                  // from @llvm-project
 #include "mlir/include/mlir/IR/ValueRange.h"             // from @llvm-project
@@ -40,7 +45,7 @@
 #include "mlir/include/mlir/Support/LogicalResult.h"     // from @llvm-project
 #include "mlir/include/mlir/Tools/mlir-translate/Translation.h"  // from @llvm-project
 
-#define DEBUG_TYPE "emit-tfhe-rust-bool"
+#define DEBUG_TYPE "emit-tfhe-rust-hl-bool"
 
 namespace mlir {
 namespace heir {
@@ -90,7 +95,8 @@ LogicalResult TfheRustHLEmitter::translate(Operation &op) {
           .Case<func::FuncOp, func::ReturnOp>(
               [&](auto op) { return printOperation(op); })
           // Affine ops
-          .Case<affine::AffineForOp, affine::AffineYieldOp>(
+          .Case<affine::AffineForOp, affine::AffineYieldOp,
+                affine::AffineLoadOp, affine::AffineStoreOp>(
               [&](auto op) { return printOperation(op); })
           // Arith ops
           .Case<arith::ConstantOp, arith::IndexCastOp, arith::ShRSIOp,
@@ -215,7 +221,10 @@ void TfheRustHLEmitter::emitAssignPrefix(Value result) {
 }
 
 void TfheRustHLEmitter::emitReferenceConversion(Value value) {
-  auto tensorType = dyn_cast<TensorType>(value.getType());
+  // auto tensorType = dyn_cast<TensorType>(value.getType());
+
+  // if (isa<EncryptedBoolType>(tensorType.getElementType())) {
+  //   auto varName = variableNames->getNameForValue(value);
 
   auto varName = variableNames->getNameForValue(value);
 
@@ -480,6 +489,63 @@ LogicalResult TfheRustHLEmitter::printOperation(memref::LoadOp op) {
                                return variableNames->getNameForValue(value) +
                                       " as usize";
                              })
+     << ")).unwrap();\n";
+  return success();
+}
+
+// Store into a BTreeMap<(usize, ...), Ciphertext>
+LogicalResult TfheRustHLEmitter::printOperation(affine::AffineStoreOp op) {
+  // We assume here that the indices are SSA values (not integer attributes).
+  os << variableNames->getNameForValue(op.getMemref());
+  os << ".insert((" << commaSeparatedValues(op.getIndices(), [&](Value value) {
+    return variableNames->getNameForValue(value) + std::string(" as usize");
+  }) << "), ";
+
+  // Note: we may not need to clone all the time, but the BTreeMap stores
+  // Ciphertexts, not &Ciphertexts. This is because results computed inside for
+  // loops will not live long enough.
+
+  const auto *suffix = ".clone()";
+  os << variableNames->getNameForValue(op.getValueToStore()) << suffix
+     << ");\n";
+  return success();
+}
+
+// Produces a &Ciphertext
+LogicalResult TfheRustHLEmitter::printOperation(affine::AffineLoadOp op) {
+  OpBuilder builder(op->getContext());
+  auto indices = affine::expandAffineMap(builder, op->getLoc(), op.getMap(),
+                                         op.getIndices());
+
+  if (isa<BlockArgument>(op.getMemref())) {
+    emitAssignPrefix(op.getResult());
+
+    os << "&" << variableNames->getNameForValue(op.getMemRef()) << "["
+       << flattenIndexExpression(
+              op.getMemRefType(), indices.value(),
+              [&](Value value) {
+                // FIXME?: This is a hack to get the index of the value
+                auto ctOp = dyn_cast<arith::ConstantOp>(value.getDefiningOp());
+                auto index = cast<IntegerAttr>(ctOp.getValue())
+                                 .getValue()
+                                 .getSExtValue();
+                return std::to_string(index);
+              })
+       << "];\n";
+    return success();
+  }
+
+  // Treat thiFs as a BTreeMap
+  emitAssignPrefix(op.getResult());
+  os << "&" << variableNames->getNameForValue(op.getMemref()) << ".get(&("
+     << commaSeparatedValues(
+            indices.value(),
+            [&](Value value) {
+              auto ctOp = dyn_cast<arith::ConstantOp>(value.getDefiningOp());
+              auto index =
+                  cast<IntegerAttr>(ctOp.getValue()).getValue().getSExtValue();
+              return std::to_string(index);
+            })
      << ")).unwrap();\n";
   return success();
 }

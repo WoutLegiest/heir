@@ -58,6 +58,8 @@ class TfheRustHLEmitter {
   LogicalResult printOperation(::mlir::func::ReturnOp op);
   LogicalResult printOperation(affine::AffineForOp op);
   LogicalResult printOperation(affine::AffineYieldOp op);
+  LogicalResult printOperation(affine::AffineStoreOp op);
+  LogicalResult printOperation(affine::AffineLoadOp op);
   LogicalResult printOperation(arith::ConstantOp op);
   LogicalResult printOperation(arith::IndexCastOp op);
   LogicalResult printOperation(arith::ShLIOp op);

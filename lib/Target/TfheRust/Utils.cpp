@@ -23,13 +23,14 @@ LogicalResult canEmitFuncForTfheRust(func::FuncOp &funcOp) {
         // This list should match the list of implemented overloads of
         // `printOperation`.
         .Case<ModuleOp, func::FuncOp, func::ReturnOp, affine::AffineForOp,
-              affine::AffineYieldOp, arith::ConstantOp, arith::IndexCastOp,
+              affine::AffineYieldOp, affine::AffineLoadOp,
+              affine::AffineStoreOp, arith::ConstantOp, arith::IndexCastOp,
               arith::ShLIOp, arith::AndIOp, arith::ShRSIOp, arith::TruncIOp,
               tensor::ExtractOp, tensor::FromElementsOp, memref::AllocOp,
               memref::DeallocOp, memref::GetGlobalOp, memref::LoadOp,
               memref::StoreOp, AddOp, BitAndOp, CreateTrivialOp,
               ApplyLookupTableOp, GenerateLookupTableOp, ScalarLeftShiftOp,
-              ::mlir::heir::tfhe_rust_bool::CreateTrivialOp,
+              MulOp, ::mlir::heir::tfhe_rust_bool::CreateTrivialOp,
               ::mlir::heir::tfhe_rust_bool::AndOp,
               ::mlir::heir::tfhe_rust_bool::PackedOp,
               ::mlir::heir::tfhe_rust_bool::NandOp,
