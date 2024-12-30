@@ -493,12 +493,24 @@ LogicalResult TfheRustHLEmitter::printOperation(memref::LoadOp op) {
   return success();
 }
 
+// FIXME?: This is a hack to get the index of the value
+static int extractIntFromValue(Value value) {
+  auto ctOp = dyn_cast<arith::ConstantOp>(value.getDefiningOp());
+  return cast<IntegerAttr>(ctOp.getValue()).getValue().getSExtValue();
+}
+
 // Store into a BTreeMap<(usize, ...), Ciphertext>
 LogicalResult TfheRustHLEmitter::printOperation(affine::AffineStoreOp op) {
   // We assume here that the indices are SSA values (not integer attributes).
+
+  OpBuilder builder(op->getContext());
+  auto indices = affine::expandAffineMap(builder, op->getLoc(), op.getMap(),
+                                         op.getIndices());
+
   os << variableNames->getNameForValue(op.getMemref());
-  os << ".insert((" << commaSeparatedValues(op.getIndices(), [&](Value value) {
-    return variableNames->getNameForValue(value) + std::string(" as usize");
+  os << ".insert((" << commaSeparatedValues(indices.value(), [&](Value value) {
+    return std::to_string(extractIntFromValue(value)) +
+           std::string(" as usize");
   }) << "), ";
 
   // Note: we may not need to clone all the time, but the BTreeMap stores
@@ -524,27 +536,19 @@ LogicalResult TfheRustHLEmitter::printOperation(affine::AffineLoadOp op) {
        << flattenIndexExpression(
               op.getMemRefType(), indices.value(),
               [&](Value value) {
-                // FIXME?: This is a hack to get the index of the value
-                auto ctOp = dyn_cast<arith::ConstantOp>(value.getDefiningOp());
-                auto index = cast<IntegerAttr>(ctOp.getValue())
-                                 .getValue()
-                                 .getSExtValue();
-                return std::to_string(index);
+                return std::to_string(extractIntFromValue(value));
               })
        << "];\n";
     return success();
   }
 
-  // Treat thiFs as a BTreeMap
+  // Treat this as a BTreeMap
   emitAssignPrefix(op.getResult());
   os << "&" << variableNames->getNameForValue(op.getMemref()) << ".get(&("
      << commaSeparatedValues(
             indices.value(),
             [&](Value value) {
-              auto ctOp = dyn_cast<arith::ConstantOp>(value.getDefiningOp());
-              auto index =
-                  cast<IntegerAttr>(ctOp.getValue()).getValue().getSExtValue();
-              return std::to_string(index);
+              return std::to_string(extractIntFromValue(value));
             })
      << ")).unwrap();\n";
   return success();
