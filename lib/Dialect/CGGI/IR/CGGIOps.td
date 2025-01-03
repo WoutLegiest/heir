@@ -310,4 +310,23 @@ def CGGI_CreateTrivialOp : CGGI_Op<"create_trivial", [Pure]> {
   let results = (outs LWECiphertextLike:$output);
 }
 
+def CGGI_CastOp : CGGI_Op<"cast", [Pure, SameOperandsAndResultShape]> {
+  let summary = "change the plaintext space of a CGGI ciphertext";
+
+  let description = [{
+    "cast" operation to change the plaintext size of a CGGI ciphertext.
+    Note this operations is not a standard CGGI operation, but an mirror of the cast op implemented in TFHE-rs.
+
+    Examples:
+    ```
+    `cggi.cast %c0 : `
+    ```
+  }];
+
+  let arguments = (ins LWETypes:$input);
+  let results = (outs LWETypes:$output);
+
+  let assemblyFormat = "$input attr-dict `:` type($input) `to` type($output)";
+}
+
 #endif  // LIB_DIALECT_CGGI_IR_CGGIOPS_TD_

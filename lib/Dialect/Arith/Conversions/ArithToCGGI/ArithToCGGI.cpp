@@ -89,6 +89,60 @@ struct ConvertConstantOp : public OpConversionPattern<mlir::arith::ConstantOp> {
   }
 };
 
+struct ConvertTruncIOp : public OpConversionPattern<mlir::arith::TruncIOp> {
+  ConvertTruncIOp(mlir::MLIRContext *context)
+      : OpConversionPattern<mlir::arith::TruncIOp>(context) {}
+
+  using OpConversionPattern::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(
+      mlir::arith::TruncIOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
+    ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+
+    // Get both sizes, find difference, implement a ShR
+    auto resultType = op.getResult().getType();
+    auto inputType = op.getOperand().getType();
+
+    auto shiftAmount =
+        inputType.getIntOrFloatBitWidth() - resultType.getIntOrFloatBitWidth();
+
+    auto inputValue = mlir::IntegerAttr::get(rewriter.getI8Type(), shiftAmount);
+
+    auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getI8Type(), inputValue);
+
+    auto shiftOp =
+        b.create<cggi::ShiftRightOp>(resultType, op.getOperand(), cteOp);
+
+    rewriter.replaceOp(op, shiftOp);
+    return success();
+  }
+};
+
+struct ConvertExtUIOp : public OpConversionPattern<mlir::arith::ExtUIOp> {
+  ConvertExtUIOp(mlir::MLIRContext *context)
+      : OpConversionPattern<mlir::arith::ExtUIOp>(context) {}
+
+  using OpConversionPattern::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(
+      mlir::arith::ExtUIOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
+    ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+
+    auto
+
+        // auto castOp = b.create<cggi::CastOp>(
+        //     op.getLoc(), convertArithType(op.getType()), adaptor.getIn());
+        // auto castOp = b.create<cggi::CastOp>(op.getResult().getType(),
+        // op.getOperand());
+
+        rewriter.replaceOp(op, castOp);
+    return success();
+  }
+};
+
 struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
   void runOnOperation() override {
     MLIRContext *context = &getContext();
@@ -114,7 +168,8 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
     });
 
     patterns.add<
-        ConvertConstantOp, ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
+        ConvertConstantOp, ConvertTruncIOp,
+        ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
         ConvertBinOp<mlir::arith::MulIOp, cggi::MulOp>,
         ConvertBinOp<mlir::arith::SubIOp, cggi::SubOp>,
         ConvertAny<memref::LoadOp>, ConvertAny<memref::AllocOp>,
