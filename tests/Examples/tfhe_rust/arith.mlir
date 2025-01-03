@@ -1,3 +1,4 @@
+// --emit-tfhe-rust-hl
 module attributes {tf_saved_model.semantics} {
   func.func @test_affine(%arg0: !tfhe_rust.server_key, %arg1: memref<2x3x!tfhe_rust.eui32>) -> memref<1x1x!tfhe_rust.eui32> {
     %c429_i32 = arith.constant 429 : i32

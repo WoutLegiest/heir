@@ -1,5 +1,7 @@
 #include "lib/Target/TfheRustHL/TfheRustHLEmitter.h"
 
+#include <llvm-16/llvm/Support/Debug.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -65,6 +67,9 @@ FailureOr<int> getRustIntegerType(int width) {
 
 }  // namespace
 
+// Global Variable
+int16_t DefaultTfheRustHLBitWidth = 32;
+
 void registerToTfheRustHLTranslation() {
   TranslateFromMLIRRegistration reg(
       "emit-tfhe-rust-hl", "translate the tfhe-rs dialect to HL Rust code",
@@ -123,7 +128,25 @@ LogicalResult TfheRustHLEmitter::translate(Operation &op) {
 }
 
 LogicalResult TfheRustHLEmitter::printOperation(ModuleOp moduleOp) {
-  os << (packedAPI ? kFPGAModulePrelude : kModulePrelude) << "\n";
+  os << kModulePrelude;
+
+  // Find default type of the module and use a Type alias
+  moduleOp.getOperation()->walk([&](Operation *op) {
+    for (Type resultType : op->getResultTypes()) {
+      if (resultType.hasTrait<EncryptedInteger>()) {
+        auto size = getTfheRustBitWidth(resultType);
+        DefaultTfheRustHLBitWidth = size;
+
+        os << "type Ciphertext = tfhe::FheUint<tfhe::FheUint" << size
+           << "Id>; \n\n";
+
+        return WalkResult::interrupt();
+      }
+    }
+    return WalkResult::advance();  // Continue walking to the next operation
+  });
+
+  // Emit rest the actual program
   for (Operation &op : moduleOp) {
     if (failed(translate(op))) {
       return failure();
@@ -143,13 +166,15 @@ LogicalResult TfheRustHLEmitter::printOperation(func::FuncOp funcOp) {
   os << "pub fn " << funcOp.getName() << "(\n";
   os.indent();
   for (Value arg : funcOp.getArguments()) {
-    auto argName = variableNames->getNameForValue(arg);
-    os << argName << ": &";
-    if (failed(emitType(arg.getType()))) {
-      return funcOp.emitOpError()
-             << "Failed to emit tfhe-rs bool type " << arg.getType();
+    if (!isa<tfhe_rust::ServerKeyType>(arg.getType())) {
+      auto argName = variableNames->getNameForValue(arg);
+      os << argName << ": &";
+      if (failed(emitType(arg.getType()))) {
+        return funcOp.emitOpError()
+               << "Failed to emit tfhe-rs type " << arg.getType();
+      }
+      os << ",\n";
     }
-    os << ",\n";
   }
   os.unindent();
   os << ") -> ";
@@ -157,8 +182,7 @@ LogicalResult TfheRustHLEmitter::printOperation(func::FuncOp funcOp) {
   if (funcOp.getNumResults() == 1) {
     Type result = funcOp.getResultTypes()[0];
     if (failed(emitType(result))) {
-      return funcOp.emitOpError()
-             << "Failed to emit tfhe-rs bool type " << result;
+      return funcOp.emitOpError() << "Failed to emit tfhe-rs type " << result;
     }
   } else {
     auto result = commaSeparatedTypes(
@@ -166,7 +190,7 @@ LogicalResult TfheRustHLEmitter::printOperation(func::FuncOp funcOp) {
           auto result = convertType(type);
           if (failed(result)) {
             return funcOp.emitOpError()
-                   << "Failed to emit tfhe-rs bool type " << type;
+                   << "Failed to emit tfhe-rs type " << type;
           }
           return result;
         });
@@ -191,20 +215,33 @@ LogicalResult TfheRustHLEmitter::printOperation(func::FuncOp funcOp) {
 
 LogicalResult TfheRustHLEmitter::printOperation(func::ReturnOp op) {
   std::function<std::string(Value)> valueOrClonedValue = [&](Value value) {
-    auto *suffix = "";
     if (isa<BlockArgument>(value)) {
-      suffix = ".clone()";
+      // Function arguments used as outputs must be cloned.
+      return variableNames->getNameForValue(value) + ".clone()";
+    } else if (MemRefType memRefType = dyn_cast<MemRefType>(value.getType())) {
+      auto shape = memRefType.getShape();
+      // Internally allocated memrefs that are treated as hashmaps must be
+      // converted to arrays.
+      unsigned int i = 0;
+      std::string res =
+          variableNames->getNameForValue(value) + std::string(".get(&(") +
+          std::accumulate(std::next(shape.begin()), shape.end(),
+                          std::string("i0"),
+                          [&](std::string a, int64_t value) {
+                            return a + ", i" + std::to_string(++i);
+                          }) +
+          std::string(")).unwrap().clone()");
+      for ([[maybe_unused]] unsigned _ : shape) {
+        res = llvm::formatv("core::array::from_fn(|i{0}| {1})", i--, res);
+      }
+      return res;
     }
-    if (isa<tensor::FromElementsOp>(value.getDefiningOp())) {
-      suffix = ".into_iter().cloned().collect()";
-    }
-    if (isa<memref::AllocOp>(value.getDefiningOp())) {
-      // MemRefs (BTreeMap<(usize, ...), Ciphertext>) must be converted to
-      // Vec<Ciphertext>
-      suffix = ".into_values().collect()";
-    };
-    return variableNames->getNameForValue(value) + suffix;
+    return variableNames->getNameForValue(value);
   };
+
+  if (op.getNumOperands() == 0) {
+    return success();
+  }
 
   if (op.getNumOperands() == 1) {
     os << valueOrClonedValue(op.getOperands()[0]) << "\n";
@@ -220,114 +257,42 @@ void TfheRustHLEmitter::emitAssignPrefix(Value result) {
   os << "let " << variableNames->getNameForValue(result) << " = ";
 }
 
-void TfheRustHLEmitter::emitReferenceConversion(Value value) {
-  // auto tensorType = dyn_cast<TensorType>(value.getType());
-
-  // if (isa<EncryptedBoolType>(tensorType.getElementType())) {
-  //   auto varName = variableNames->getNameForValue(value);
-
-  auto varName = variableNames->getNameForValue(value);
-
-  os << "let " << varName << "_ref = " << varName << ".clone();\n";
-  os << "let " << varName << "_ref: Vec<&Ciphertext> = " << varName
-     << ".iter().collect();\n";
-}
-
-LogicalResult TfheRustHLEmitter::printSksMethod(
-    ::mlir::Value result, ::mlir::Value sks, ::mlir::ValueRange nonSksOperands,
+LogicalResult TfheRustHLEmitter::printMethod(
+    ::mlir::Value result, ::mlir::ValueRange nonSksOperands,
     std::string_view op, SmallVector<std::string> operandTypes) {
-  // If using the packed API, then emit single boolean operations as a packed
-  // operations with a single gate
-  std::string gateStr = StringRef(op).upper();
-  auto *opParent = nonSksOperands[0].getDefiningOp();
-
-  size_t numberOfOperands = 0;
-
-  // Handle element-wise boolean gate operations with tensor type operands and
-  // results.
-  if (isa<TensorType>(result.getType())) {
-    auto resType = mlir::dyn_cast<TensorType>(result.getType());
-    numberOfOperands = resType.getNumElements();
-  } else {
-    numberOfOperands = 1;
-  }
-
-  if (!opParent) {
-    for (auto nonSksOperand : nonSksOperands) {
-      emitReferenceConversion(nonSksOperand);
-    }
-  }
-
   emitAssignPrefix(result);
-  os << variableNames->getNameForValue(sks);
 
-  // parse the not gate
-  if (!gateStr.compare("NOT")) {
-    os << ".packed_not(\n";
-  } else {
-    os << ".packed_gates( \n &vec![";
-
-    for (size_t i = 0; i < numberOfOperands; i++) {
-      os << "Gate::" << gateStr << ", ";
+  auto *operandTypesIt = operandTypes.begin();
+  // os << variableNames->getNameForValue(sks) << "." << op << "(";
+  os << commaSeparatedValues(nonSksOperands, [&](Value value) {
+    auto *prefix = value.getType().hasTrait<PassByReference>() ? "&" : "";
+    // First check if a DefiningOp exists
+    // if not: comes from function definition
+    mlir::Operation *op = value.getDefiningOp();
+    if (op) {
+      auto referencePredicate =
+          isa<tensor::ExtractOp>(op) || isa<memref::LoadOp>(op);
+      prefix = referencePredicate ? "" : prefix;
+    } else {
+      prefix = "";
     }
 
-    os << "],\n";
-  }
+    return prefix + variableNames->getNameForValue(value) +
+           (!operandTypes.empty() ? " as " + *operandTypesIt++ : "");
+  });
 
-  os << commaSeparatedValues(
-      nonSksOperands, [&, numberOfOperands](Value value) {
-        std::string prefix;
-        std::string suffix;
+  os << ");\n";
 
-        tie(prefix, suffix) = checkOrigin(value);
-        if (numberOfOperands == 1) {
-          prefix = "&vec![&";
-          suffix = "]" + suffix;
-        }
-
-        return prefix + variableNames->getNameForValue(value) + suffix;
-      });
-
-  if (numberOfOperands == 1) {
-    os << ")[0].clone();\n";
-  } else {
-    os << ");\n";
-  }
-
-  // Check that this translation can only be used by non-tensor operands
-  if (!isa<TensorType>(nonSksOperands[0].getType())) {
-    emitAssignPrefix(result);
-
-    auto *operandTypesIt = operandTypes.begin();
-    os << variableNames->getNameForValue(sks) << "." << op << "(";
-    os << commaSeparatedValues(nonSksOperands, [&](Value value) {
-      auto *prefix = value.getType().hasTrait<PassByReference>() ? "&" : "";
-      // First check if a DefiningOp exists
-      // if not: comes from function definition
-      mlir::Operation *op = value.getDefiningOp();
-      if (op) {
-        auto referencePredicate =
-            isa<tensor::ExtractOp>(op) || isa<memref::LoadOp>(op);
-        prefix = referencePredicate ? "" : prefix;
-      } else {
-        prefix = "";
-      }
-
-      return prefix + variableNames->getNameForValue(value) +
-             (!operandTypes.empty() ? " as " + *operandTypesIt++ : "");
-    });
-
-    os << ");\n";
-
-    return success();
-  }
+  return success();
 
   return failure();
 }
 
 LogicalResult TfheRustHLEmitter::printOperation(CreateTrivialOp op) {
-  return printSksMethod(op.getResult(), op.getServerKey(), {op.getValue()},
-                        "create_trivial", {"u64"});
+  emitAssignPrefix(op.getResult());
+  os << "FheUint" << DefaultTfheRustHLBitWidth << "::try_encrypt_trivial("
+     << variableNames->getNameForValue(op.getValue()) << ").unwrap();\n";
+  return success();
 }
 
 LogicalResult TfheRustHLEmitter::printOperation(affine::AffineForOp op) {
@@ -375,7 +340,7 @@ LogicalResult TfheRustHLEmitter::printOperation(arith::ConstantOp op) {
 
   emitAssignPrefix(op.getResult());
   if (auto intAttr = dyn_cast<IntegerAttr>(valueAttr)) {
-    os << intAttr.getValue() << ";\n";
+    os << intAttr.getValue() << "u64;\n";
   } else {
     return op.emitError() << "Unknown constant type " << valueAttr.getType();
   }
@@ -532,13 +497,11 @@ LogicalResult TfheRustHLEmitter::printOperation(affine::AffineLoadOp op) {
   if (isa<BlockArgument>(op.getMemref())) {
     emitAssignPrefix(op.getResult());
 
-    os << "&" << variableNames->getNameForValue(op.getMemRef()) << "["
-       << flattenIndexExpression(
-              op.getMemRefType(), indices.value(),
-              [&](Value value) {
-                return std::to_string(extractIntFromValue(value));
-              })
-       << "];\n";
+    os << "&" << variableNames->getNameForValue(op.getMemRef());
+    for (auto value : indices.value()) {
+      os << "[" << std::to_string(extractIntFromValue(value)) << "]";
+    }
+    os << ";\n";
     return success();
   }
 
@@ -630,7 +593,8 @@ FailureOr<std::string> TfheRustHLEmitter::convertType(Type type) {
         return (type.isUnsigned() ? std::string("u") : "") + "i" +
                std::to_string(width.value());
       })
-      .Case<ServerKeyType>([&](auto type) { return std::string("ServerKey"); })
+      // .Case<ServerKeyType>([&](auto type) { return std::string("ServerKey");
+      // })
       .Case<LookupTableType>(
           [&](auto type) { return std::string("LookupTableOwned"); })
       .Default([&](Type &) { return failure(); });
@@ -668,7 +632,7 @@ std::pair<std::string, std::string> TfheRustHLEmitter::checkOrigin(
 TfheRustHLEmitter::TfheRustHLEmitter(raw_ostream &os,
                                      SelectVariableNames *variableNames,
                                      bool packedAPI)
-    : os(os), variableNames(variableNames), packedAPI(packedAPI) {}
+    : os(os), variableNames(variableNames) {}
 }  // namespace tfhe_rust
 }  // namespace heir
 }  // namespace mlir

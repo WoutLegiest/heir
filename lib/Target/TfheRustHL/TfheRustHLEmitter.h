@@ -49,9 +49,6 @@ class TfheRustHLEmitter {
   /// values.
   SelectVariableNames *variableNames;
 
-  // Boolean to keep track if the packed API is used or not
-  bool packedAPI;
-
   // Functions for printing individual ops
   LogicalResult printOperation(::mlir::ModuleOp op);
   LogicalResult printOperation(::mlir::func::FuncOp op);
@@ -77,10 +74,10 @@ class TfheRustHLEmitter {
   LogicalResult printOperation(BitAndOp op);
 
   // Helpers for above
-  LogicalResult printSksMethod(::mlir::Value result, ::mlir::Value sks,
-                               ::mlir::ValueRange nonSksOperands,
-                               std::string_view op,
-                               SmallVector<std::string> operandTypes = {});
+  LogicalResult printMethod(::mlir::Value result,
+                            ::mlir::ValueRange nonSksOperands,
+                            std::string_view op,
+                            SmallVector<std::string> operandTypes = {});
   LogicalResult printBinaryOp(::mlir::Value result, ::mlir::Value lhs,
                               ::mlir::Value rhs, std::string_view op);
   std::pair<std::string, std::string> checkOrigin(Value value);
