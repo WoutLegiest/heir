@@ -16,8 +16,8 @@ namespace mlir::heir::arith {
 #define GEN_PASS_DEF_ARITHTOCGGI
 #include "lib/Dialect/Arith/Conversions/ArithToCGGI/ArithToCGGI.h.inc"
 
-static lwe::LWECiphertextType convertArithType(IntegerType type,
-                                               MLIRContext *ctx) {
+static lwe::LWECiphertextType convertArithToCGGIType(IntegerType type,
+                                                     MLIRContext *ctx) {
   return lwe::LWECiphertextType::get(ctx,
                                      lwe::UnspecifiedBitFieldEncodingAttr::get(
                                          ctx, type.getIntOrFloatBitWidth()),
@@ -25,9 +25,10 @@ static lwe::LWECiphertextType convertArithType(IntegerType type,
   ;
 }
 
-static Type convertArithLikeType(ShapedType type, MLIRContext *ctx) {
+static Type convertArithLikeToCGGIType(ShapedType type, MLIRContext *ctx) {
   if (auto arithType = llvm::dyn_cast<IntegerType>(type.getElementType())) {
-    return type.cloneWith(type.getShape(), convertArithType(arithType, ctx));
+    return type.cloneWith(type.getShape(),
+                          convertArithToCGGIType(arithType, ctx));
   }
   return type;
 }
@@ -40,11 +41,11 @@ class ArithToCGGITypeConverter : public TypeConverter {
 
     // Convert Integer types to LWE ciphertext types
     addConversion([ctx](IntegerType type) -> Type {
-      return convertArithType(type, ctx);
+      return convertArithToCGGIType(type, ctx);
     });
 
     addConversion([ctx](ShapedType type) -> Type {
-      return convertArithLikeType(type, ctx);
+      return convertArithLikeToCGGIType(type, ctx);
     });
     // addTargetMaterialization(buildConstantOp);
   }
@@ -112,10 +113,17 @@ struct ConvertTruncIOp : public OpConversionPattern<mlir::arith::TruncIOp> {
     auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
         op.getLoc(), rewriter.getI8Type(), inputValue);
 
-    auto shiftOp =
-        b.create<cggi::ShiftRightOp>(resultType, op.getOperand(), cteOp);
+    auto resultTypeReal = convertArithToCGGIType(
+        cast<IntegerType>(op.getResult().getType()), op->getContext());
 
-    rewriter.replaceOp(op, shiftOp);
+    auto shiftOp = b.create<cggi::ShiftRightOp>(adaptor.getIn().getType(),
+                                                adaptor.getIn(), cteOp);
+
+    auto outType = convertArithToCGGIType(
+        cast<IntegerType>(op.getResult().getType()), op->getContext());
+    auto castOp = b.create<cggi::CastOp>(op.getLoc(), outType, adaptor.getIn());
+
+    rewriter.replaceOp(op, castOp);
     return success();
   }
 };
@@ -131,14 +139,63 @@ struct ConvertExtUIOp : public OpConversionPattern<mlir::arith::ExtUIOp> {
       ConversionPatternRewriter &rewriter) const override {
     ImplicitLocOpBuilder b(op.getLoc(), rewriter);
 
-    auto
+    auto outType = convertArithToCGGIType(
+        cast<IntegerType>(op.getResult().getType()), op->getContext());
+    auto castOp = b.create<cggi::CastOp>(op.getLoc(), outType, adaptor.getIn());
 
-        // auto castOp = b.create<cggi::CastOp>(
-        //     op.getLoc(), convertArithType(op.getType()), adaptor.getIn());
-        // auto castOp = b.create<cggi::CastOp>(op.getResult().getType(),
-        // op.getOperand());
+    rewriter.replaceOp(op, castOp);
+    return success();
+  }
+};
 
-        rewriter.replaceOp(op, castOp);
+struct ConvertShRUIOp : public OpConversionPattern<mlir::arith::ShRUIOp> {
+  ConvertShRUIOp(mlir::MLIRContext *context)
+      : OpConversionPattern<mlir::arith::ShRUIOp>(context) {}
+
+  using OpConversionPattern::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(
+      mlir::arith::ShRUIOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
+    ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+
+    auto cteShiftSizeOp = op.getRhs().getDefiningOp<mlir::arith::ConstantOp>();
+
+    if (cteShiftSizeOp) {
+      auto outputType = adaptor.getLhs().getType();
+
+      auto shiftAmount = cast<IntegerAttr>(cteShiftSizeOp.getValue())
+                             .getValue()
+                             .getSExtValue();
+
+      auto inputValue =
+          mlir::IntegerAttr::get(rewriter.getI8Type(), (int8_t)shiftAmount);
+      auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
+          op.getLoc(), rewriter.getI8Type(), inputValue);
+
+      auto shiftOp =
+          b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(), cteOp);
+      rewriter.replaceOp(op, shiftOp);
+
+      return success();
+    }
+
+    cteShiftSizeOp = op.getLhs().getDefiningOp<mlir::arith::ConstantOp>();
+
+    auto outputType = adaptor.getRhs().getType();
+
+    auto shiftAmount =
+        cast<IntegerAttr>(cteShiftSizeOp.getValue()).getValue().getSExtValue();
+
+    auto inputValue = mlir::IntegerAttr::get(rewriter.getI8Type(), shiftAmount);
+    auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
+        op.getLoc(), rewriter.getI8Type(), inputValue);
+
+    auto shiftOp =
+        b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(), cteOp);
+    rewriter.replaceOp(op, shiftOp);
+    rewriter.replaceOp(op.getLhs().getDefiningOp(), cteOp);
+
     return success();
   }
 };
@@ -156,7 +213,13 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
 
     target.addDynamicallyLegalOp<mlir::arith::ConstantOp>(
         [](mlir::arith::ConstantOp op) {
-          return isa<IndexType>(op.getValue().getType());
+          // Allow use of constant if it is used to denote the size of a shift
+          bool usedByShift = llvm::any_of(op->getUsers(), [&](Operation *user) {
+            llvm::dbgs() << "user: " << *user << " "
+                         << isa<cggi::ShiftRightOp>(user) << "\n";
+            return isa<cggi::ShiftRightOp>(user);
+          });
+          return (isa<IndexType>(op.getValue().getType()) || (usedByShift));
         });
 
     target.addDynamicallyLegalOp<
@@ -168,7 +231,7 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
     });
 
     patterns.add<
-        ConvertConstantOp, ConvertTruncIOp,
+        ConvertConstantOp, ConvertTruncIOp, ConvertExtUIOp, ConvertShRUIOp,
         ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
         ConvertBinOp<mlir::arith::MulIOp, cggi::MulOp>,
         ConvertBinOp<mlir::arith::SubIOp, cggi::SubOp>,

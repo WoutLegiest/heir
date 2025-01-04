@@ -323,8 +323,8 @@ def CGGI_CastOp : CGGI_Op<"cast", [Pure, SameOperandsAndResultShape]> {
     ```
   }];
 
-  let arguments = (ins LWETypes:$input);
-  let results = (outs LWETypes:$output);
+  let arguments = (ins LWECiphertextLike:$input);
+  let results = (outs LWECiphertextLike:$output);
 
   let assemblyFormat = "$input attr-dict `:` type($input) `to` type($output)";
 }
