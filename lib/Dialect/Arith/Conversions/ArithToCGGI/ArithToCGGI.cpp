@@ -33,7 +33,6 @@ static Type convertArithLikeToCGGIType(ShapedType type, MLIRContext *ctx) {
   return type;
 }
 
-// Remove this class if no type conversions are necessary
 class ArithToCGGITypeConverter : public TypeConverter {
  public:
   ArithToCGGITypeConverter(MLIRContext *ctx) {
@@ -129,6 +128,26 @@ struct ConvertExtUIOp : public OpConversionPattern<mlir::arith::ExtUIOp> {
   }
 };
 
+struct ConvertExtSIOp : public OpConversionPattern<mlir::arith::ExtSIOp> {
+  ConvertExtSIOp(mlir::MLIRContext *context)
+      : OpConversionPattern<mlir::arith::ExtSIOp>(context) {}
+
+  using OpConversionPattern::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(
+      mlir::arith::ExtSIOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
+    ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+
+    auto outType = convertArithToCGGIType(
+        cast<IntegerType>(op.getResult().getType()), op->getContext());
+    auto castOp = b.create<cggi::CastOp>(op.getLoc(), outType, adaptor.getIn());
+
+    rewriter.replaceOp(op, castOp);
+    return success();
+  }
+};
+
 struct ConvertShRUIOp : public OpConversionPattern<mlir::arith::ShRUIOp> {
   ConvertShRUIOp(mlir::MLIRContext *context)
       : OpConversionPattern<mlir::arith::ShRUIOp>(context) {}
@@ -211,7 +230,7 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
 
     patterns.add<
         ConvertConstantOp, ConvertTruncIOp, ConvertExtUIOp, ConvertShRUIOp,
-        ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
+        ConvertExtSIOp, ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
         ConvertBinOp<mlir::arith::MulIOp, cggi::MulOp>,
         ConvertBinOp<mlir::arith::SubIOp, cggi::SubOp>,
         ConvertAny<memref::LoadOp>, ConvertAny<memref::AllocOp>,
