@@ -22,7 +22,6 @@ static lwe::LWECiphertextType convertArithToCGGIType(IntegerType type,
                                      lwe::UnspecifiedBitFieldEncodingAttr::get(
                                          ctx, type.getIntOrFloatBitWidth()),
                                      lwe::LWEParamsAttr());
-  ;
 }
 
 static Type convertArithLikeToCGGIType(ShapedType type, MLIRContext *ctx) {
@@ -47,16 +46,6 @@ class ArithToCGGITypeConverter : public TypeConverter {
       return convertArithLikeToCGGIType(type, ctx);
     });
   }
-};
-
-class SecretTypeConverter : public TypeConverter {
- public:
-  SecretTypeConverter(MLIRContext *ctx, int minBitWidth)
-      : minBitWidth(minBitWidth) {
-    addConversion([](Type type) { return type; });
-  }
-
-  int minBitWidth;
 };
 
 struct ConvertConstantOp : public OpConversionPattern<mlir::arith::ConstantOp> {
