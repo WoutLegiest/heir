@@ -215,13 +215,9 @@ struct ConvertLut3Op : public OpConversionPattern<cggi::Lut3Op> {
         serverKey, adaptor.getLookupTable());
     // Construct input = c << 2 + b << 1 + a
     auto shiftedC = b.create<tfhe_rust::ScalarLeftShiftOp>(
-        serverKey, adaptor.getC(),
-        b.create<arith::ConstantOp>(b.getI8Type(), b.getI8IntegerAttr(2))
-            .getResult());
+        serverKey, adaptor.getC(), b.getIndexAttr(2));
     auto shiftedB = b.create<tfhe_rust::ScalarLeftShiftOp>(
-        serverKey, adaptor.getB(),
-        b.create<arith::ConstantOp>(b.getI8Type(), b.getI8IntegerAttr(1))
-            .getResult());
+        serverKey, adaptor.getB(), b.getIndexAttr(1));
     auto summedBC = b.create<tfhe_rust::AddOp>(serverKey, shiftedC, shiftedB);
     auto summedABC =
         b.create<tfhe_rust::AddOp>(serverKey, summedBC, adaptor.getA());
@@ -251,9 +247,7 @@ struct ConvertLut2Op : public OpConversionPattern<cggi::Lut2Op> {
         serverKey, adaptor.getLookupTable());
     // Construct input = b << 1 + a
     auto shiftedB = b.create<tfhe_rust::ScalarLeftShiftOp>(
-        serverKey, adaptor.getB(),
-        b.create<arith::ConstantOp>(b.getI8Type(), b.getI8IntegerAttr(1))
-            .getResult());
+        serverKey, adaptor.getB(), b.getIndexAttr(1));
     auto summedBA =
         b.create<tfhe_rust::AddOp>(serverKey, shiftedB, adaptor.getA());
 
@@ -277,10 +271,8 @@ static LogicalResult replaceBinaryGate(Operation *op, Value lhs, Value rhs,
   auto lutOp =
       b.create<tfhe_rust::GenerateLookupTableOp>(serverKey, lookupTable);
   // Construct input = rhs << 1 + lhs
-  auto shiftedRhs = b.create<tfhe_rust::ScalarLeftShiftOp>(
-      serverKey, rhs,
-      b.create<arith::ConstantOp>(b.getI8Type(), b.getI8IntegerAttr(1))
-          .getResult());
+  auto shiftedRhs =
+      b.create<tfhe_rust::ScalarLeftShiftOp>(serverKey, rhs, b.getIndexAttr(1));
   auto input = b.create<tfhe_rust::AddOp>(serverKey, shiftedRhs, lhs);
   rewriter.replaceOp(
       op, b.create<tfhe_rust::ApplyLookupTableOp>(serverKey, input, lutOp));

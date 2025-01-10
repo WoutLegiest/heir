@@ -158,12 +158,12 @@ struct ConvertShRUIOp : public OpConversionPattern<mlir::arith::ShRUIOp> {
                              .getSExtValue();
 
       auto inputValue =
-          mlir::IntegerAttr::get(rewriter.getI8Type(), (int8_t)shiftAmount);
+          mlir::IntegerAttr::get(rewriter.getIndexType(), (int8_t)shiftAmount);
       auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
-          op.getLoc(), rewriter.getI8Type(), inputValue);
+          op.getLoc(), rewriter.getIndexType(), inputValue);
 
-      auto shiftOp =
-          b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(), cteOp);
+      auto shiftOp = b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(),
+                                                  inputValue);
       rewriter.replaceOp(op, shiftOp);
 
       return success();
@@ -176,12 +176,13 @@ struct ConvertShRUIOp : public OpConversionPattern<mlir::arith::ShRUIOp> {
     auto shiftAmount =
         cast<IntegerAttr>(cteShiftSizeOp.getValue()).getValue().getSExtValue();
 
-    auto inputValue = mlir::IntegerAttr::get(rewriter.getI8Type(), shiftAmount);
+    auto inputValue =
+        mlir::IntegerAttr::get(rewriter.getIndexType(), shiftAmount);
     auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getI8Type(), inputValue);
+        op.getLoc(), rewriter.getIndexType(), inputValue);
 
     auto shiftOp =
-        b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(), cteOp);
+        b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(), inputValue);
     rewriter.replaceOp(op, shiftOp);
     rewriter.replaceOp(op.getLhs().getDefiningOp(), cteOp);
 
@@ -203,10 +204,7 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
     target.addDynamicallyLegalOp<mlir::arith::ConstantOp>(
         [](mlir::arith::ConstantOp op) {
           // Allow use of constant if it is used to denote the size of a shift
-          bool usedByShift = llvm::any_of(op->getUsers(), [&](Operation *user) {
-            return isa<cggi::ShiftRightOp>(user);
-          });
-          return (isa<IndexType>(op.getValue().getType()) || (usedByShift));
+          return (isa<IndexType>(op.getValue().getType()));
         });
 
     target.addDynamicallyLegalOp<

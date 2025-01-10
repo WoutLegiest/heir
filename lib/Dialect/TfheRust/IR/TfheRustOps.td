@@ -49,7 +49,7 @@ def TfheRust_ScalarLeftShiftOp : TfheRust_Op<"scalar_left_shift", [
   let arguments = (ins
     TfheRust_ServerKey:$serverKey,
     TfheRust_CiphertextType:$ciphertext,
-    AnyI8:$shiftAmount
+    IndexAttr:$shiftAmount
   );
   let results = (outs TfheRust_CiphertextType:$output);
 }
@@ -61,7 +61,7 @@ def TfheRust_ScalarRightShiftOp : TfheRust_Op<"scalar_right_shift", [
   let arguments = (ins
     TfheRust_ServerKey:$serverKey,
     TfheRust_CiphertextType:$ciphertext,
-    AnyI8:$shiftAmount
+    IndexAttr:$shiftAmount
   );
   let results = (outs TfheRust_CiphertextType:$output);
 }

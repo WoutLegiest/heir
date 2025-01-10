@@ -1,9 +1,5 @@
 #include "lib/Dialect/Arith/Conversions/ArithToCGGIQuart/ArithToCGGIQuart.h"
 
-#include <mlir/IR/MLIRContext.h>
-
-#include <cstdint>
-
 #include "lib/Dialect/CGGI/IR/CGGIDialect.h"
 #include "lib/Dialect/CGGI/IR/CGGIOps.h"
 #include "lib/Dialect/LWE/IR/LWEOps.h"
@@ -15,7 +11,9 @@
 #include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"    // from @llvm-project
 #include "mlir/include/mlir/Dialect/MemRef/IR/MemRef.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Tensor/IR/Tensor.h"  // from @llvm-project
+#include "mlir/include/mlir/Pass/PassManager.h"          // from @llvm-project
 #include "mlir/include/mlir/Transforms/DialectConversion.h"  // from @llvm-project
+#include "mlir/include/mlir/Transforms/Passes.h"  // from @llvm-project
 
 namespace mlir::heir::arith {
 
@@ -23,9 +21,6 @@ namespace mlir::heir::arith {
 #include "lib/Dialect/Arith/Conversions/ArithToCGGIQuart/ArithToCGGIQuart.h.inc"
 
 static constexpr unsigned maxIntWidth = 16;
-
-// ToDo: General funcntion: build trivial Op
-// Get maxIntWidth Type
 
 static lwe::LWECiphertextType convertArithToCGGIType(IntegerType type,
                                                      MLIRContext *ctx) {
@@ -97,7 +92,7 @@ class ArithToCGGIQuartTypeConverter : public TypeConverter {
 };
 
 static Value createTrivialOpMaxWidth(ImplicitLocOpBuilder b, int value) {
-  auto maxWideIntType = IntegerType::get(b.getContext(), maxIntWidth >> 1);
+  auto maxWideIntType = IntegerType::get(b.getContext(), maxIntWidth);
   auto intAttr = b.getIntegerAttr(maxWideIntType, value);
 
   auto encoding =
@@ -262,26 +257,38 @@ struct ConvertQuartConstantOp
   }
 };
 
-// struct ConvertTruncIOp : public OpConversionPattern<mlir::arith::TruncIOp> {
-//   ConvertTruncIOp(mlir::MLIRContext *context)
-//       : OpConversionPattern<mlir::arith::TruncIOp>(context) {}
+struct ConvertTruncIOp : public OpConversionPattern<mlir::arith::TruncIOp> {
+  ConvertTruncIOp(mlir::MLIRContext *context)
+      : OpConversionPattern<mlir::arith::TruncIOp>(context) {}
 
-//   using OpConversionPattern::OpConversionPattern;
+  using OpConversionPattern::OpConversionPattern;
 
-//   LogicalResult matchAndRewrite(
-//       mlir::arith::TruncIOp op, OpAdaptor adaptor,
-//       ConversionPatternRewriter &rewriter) const override {
-//     ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+  LogicalResult matchAndRewrite(
+      mlir::arith::TruncIOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
+    ImplicitLocOpBuilder b(op.getLoc(), rewriter);
 
-//     auto outType = convertArithToCGGIQuartType(
-//         cast<IntegerType>(op.getResult().getType()), op->getContext());
-//     auto castOp = b.create<cggi::CastOp>(op.getLoc(), outType,
-//     adaptor.getIn());
+    auto newResultTy = getTypeConverter()->convertType<RankedTensorType>(
+        op.getResult().getType());
+    auto newInTy =
+        getTypeConverter()->convertType<RankedTensorType>(op.getIn().getType());
 
-//     rewriter.replaceOp(op, castOp);
-//     return success();
-//   }
-// };
+    SmallVector<OpFoldResult> offsets(newResultTy.getShape().size(),
+                                      rewriter.getIndexAttr(0));
+    offsets.back() = rewriter.getIndexAttr(newInTy.getShape().back() -
+                                           newResultTy.getShape().back());
+    SmallVector<OpFoldResult> sizes(newResultTy.getShape().size());
+    sizes.back() = rewriter.getIndexAttr(1);
+    SmallVector<OpFoldResult> strides(newResultTy.getShape().size(),
+                                      rewriter.getIndexAttr(1));
+
+    auto resOp = rewriter.create<tensor::ExtractSliceOp>(
+        op->getLoc(), adaptor.getIn(), offsets, sizes, strides);
+    rewriter.replaceOp(op, resOp);
+
+    return success();
+  }
+};
 
 template <typename ArithExtOp>
 struct ConvertQuartExt final : OpConversionPattern<ArithExtOp> {
@@ -308,102 +315,23 @@ struct ConvertQuartExt final : OpConversionPattern<ArithExtOp> {
     auto resultChunks = newResultTy.getShape().back();
     auto inChunks = newInTy.getShape().back();
 
-    if (resultChunks > inChunks) {
-      auto paddingFactor = resultChunks - inChunks;
+    // Through definition of ExtOp, paddingFactor is always positive
+    auto paddingFactor = resultChunks - inChunks;
 
-      SmallVector<OpFoldResult, 1> low, high;
-      low.push_back(rewriter.getIndexAttr(0));
-      high.push_back(rewriter.getIndexAttr(paddingFactor));
+    SmallVector<OpFoldResult, 1> low, high;
+    low.push_back(rewriter.getIndexAttr(0));
+    high.push_back(rewriter.getIndexAttr(paddingFactor));
 
-      auto padValue = createTrivialOpMaxWidth(b, 0);
+    auto padValue = createTrivialOpMaxWidth(b, 0);
 
-      auto resultVec = b.create<tensor::PadOp>(newResultTy, adaptor.getIn(),
-                                               low, high, padValue,
-                                               /*nofold=*/true);
+    auto resultVec = b.create<tensor::PadOp>(newResultTy, adaptor.getIn(), low,
+                                             high, padValue,
+                                             /*nofold=*/true);
 
-      rewriter.replaceOp(op, resultVec);
-      return success();
-    }
-
-    // OTHER CASE: Going down -> Rescale
-
-    // auto outType = convertArithToCGGIQuartType(
+    rewriter.replaceOp(op, resultVec);
+    return success();
   }
 };
-
-// struct ConvertExtSIOp : public OpConversionPattern<mlir::arith::ExtSIOp> {
-//   ConvertExtSIOp(mlir::MLIRContext *context)
-//       : OpConversionPattern<mlir::arith::ExtSIOp>(context) {}
-
-//   using OpConversionPattern::OpConversionPattern;
-
-//   LogicalResult matchAndRewrite(
-//       mlir::arith::ExtSIOp op, OpAdaptor adaptor,
-//       ConversionPatternRewriter &rewriter) const override {
-//     ImplicitLocOpBuilder b(op.getLoc(), rewriter);
-
-//     auto outType = convertArithToCGGIQuartType(
-//         cast<IntegerType>(op.getResult().getType()), op->getContext());
-//     auto castOp = b.create<cggi::CastOp>(op.getLoc(), outType,
-//     adaptor.getIn());
-
-//     rewriter.replaceOp(op, castOp);
-//     return success();
-//   }
-// };
-
-// struct ConvertShRUIOp : public OpConversionPattern<mlir::arith::ShRUIOp> {
-//   ConvertShRUIOp(mlir::MLIRContext *context)
-//       : OpConversionPattern<mlir::arith::ShRUIOp>(context) {}
-
-//   using OpConversionPattern::OpConversionPattern;
-
-//   LogicalResult matchAndRewrite(
-//       mlir::arith::ShRUIOp op, OpAdaptor adaptor,
-//       ConversionPatternRewriter &rewriter) const override {
-//     ImplicitLocOpBuilder b(op.getLoc(), rewriter);
-
-//     auto cteShiftSizeOp =
-//     op.getRhs().getDefiningOp<mlir::arith::ConstantOp>();
-
-//     if (cteShiftSizeOp) {
-//       auto outputType = adaptor.getLhs().getType();
-
-//       auto shiftAmount = cast<IntegerAttr>(cteShiftSizeOp.getValue())
-//                              .getValue()
-//                              .getSExtValue();
-
-//       auto inputValue =
-//           mlir::IntegerAttr::get(rewriter.getI8Type(), (int8_t)shiftAmount);
-//       auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
-//           op.getLoc(), rewriter.getI8Type(), inputValue);
-
-//       auto shiftOp =
-//           b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(), cteOp);
-//       rewriter.replaceOp(op, shiftOp);
-
-//       return success();
-//     }
-
-//     cteShiftSizeOp = op.getLhs().getDefiningOp<mlir::arith::ConstantOp>();
-
-//     auto outputType = adaptor.getRhs().getType();
-
-//     auto shiftAmount =
-//         cast<IntegerAttr>(cteShiftSizeOp.getValue()).getValue().getSExtValue();
-
-//     auto inputValue = mlir::IntegerAttr::get(rewriter.getI8Type(),
-//     shiftAmount); auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
-//         op.getLoc(), rewriter.getI8Type(), inputValue);
-
-//     auto shiftOp =
-//         b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(), cteOp);
-//     rewriter.replaceOp(op, shiftOp);
-//     rewriter.replaceOp(op.getLhs().getDefiningOp(), cteOp);
-
-//     return success();
-//   }
-// };
 
 struct ConvertQuartAddI final : OpConversionPattern<mlir::arith::AddIOp> {
   using OpConversionPattern::OpConversionPattern;
@@ -429,14 +357,15 @@ struct ConvertQuartAddI final : OpConversionPattern<mlir::arith::AddIOp> {
 
     // Actual type of the underlying elements; we use half the width.
     // Create Constant
-    auto intAttr = IntegerAttr::get(rewriter.getI8Type(), maxIntWidth >> 1);
+    auto shiftAttr =
+        IntegerAttr::get(rewriter.getIndexType(), maxIntWidth >> 1);
 
     auto elemType = convertArithToCGGIType(
         IntegerType::get(op->getContext(), maxIntWidth), op->getContext());
     auto realTy = convertArithToCGGIType(
         IntegerType::get(op->getContext(), maxIntWidth >> 1), op->getContext());
 
-    auto constantOp = b.create<mlir::arith::ConstantOp>(intAttr);
+    // auto constantOp = b.create<mlir::arith::ConstantOp>(intAttr);
 
     SmallVector<Value> carries;
     SmallVector<Value> outputs;
@@ -449,7 +378,7 @@ struct ConvertQuartAddI final : OpConversionPattern<mlir::arith::AddIOp> {
 
       // Now all the outputs are 16b elements, wants presentation of 4x8b
       if (i != splitLhs.size() - 1) {
-        auto carry = b.create<cggi::ShiftRightOp>(elemType, lowSum, constantOp);
+        auto carry = b.create<cggi::ShiftRightOp>(elemType, lowSum, shiftAttr);
         carries.push_back(carry);
       }
 
@@ -498,36 +427,29 @@ struct ArithToCGGIQuart : public impl::ArithToCGGIQuartBase<ArithToCGGIQuart> {
 
     target.addDynamicallyLegalOp<mlir::arith::ConstantOp>(
         [](mlir::arith::ConstantOp op) {
-          // Allow use of constant if it is used to denote the size of a shift
-          bool usedByShift = llvm::any_of(op->getUsers(), [&](Operation *user) {
-            return isa<cggi::ShiftRightOp>(user);
-          });
-          return (isa<IndexType>(op.getValue().getType()) || (usedByShift));
+          return isa<IndexType>(op.getValue().getType());
         });
 
-    patterns.add<
-        ConvertQuartConstantOp,
-        // ConvertQuartExt<mlir::arith::ExtUIOp>,
-        // ConvertQuartExt<mlir::arith::ExtSIOp>,
-        ConvertQuartAddI,
-        // ConvertTruncIOp, ConvertExtUIOp,
-        // ConvertShRUIOp,
-        // ConvertExtSIOp,
-        // ConvertBinOp<mlir::arith::AddIOp, cggi::AddOp>,
-        // ConvertBinOp<mlir::arith::MulIOp, cggi::MulOp>,
-        // ConvertBinOp<mlir::arith::SubIOp, cggi::SubOp>,
-        ConvertAny<memref::LoadOp>, ConvertAny<memref::AllocOp>,
-        ConvertAny<memref::DeallocOp>, ConvertAny<memref::StoreOp>,
-        ConvertAny<memref::SubViewOp>, ConvertAny<memref::CopyOp>,
-        ConvertAny<tensor::FromElementsOp>, ConvertAny<tensor::ExtractOp>,
-        ConvertAny<affine::AffineStoreOp>, ConvertAny<affine::AffineLoadOp> >(
-        typeConverter, context);
+    patterns
+        .add<ConvertQuartConstantOp, ConvertQuartExt<mlir::arith::ExtUIOp>,
+             ConvertQuartExt<mlir::arith::ExtSIOp>, ConvertQuartAddI,
+             ConvertTruncIOp, ConvertAny<memref::LoadOp>,
+             ConvertAny<memref::AllocOp>, ConvertAny<memref::DeallocOp>,
+             ConvertAny<memref::StoreOp>, ConvertAny<memref::SubViewOp>,
+             ConvertAny<memref::CopyOp>, ConvertAny<tensor::FromElementsOp>,
+             ConvertAny<tensor::ExtractOp>, ConvertAny<affine::AffineStoreOp>,
+             ConvertAny<affine::AffineLoadOp> >(typeConverter, context);
 
     addStructuralConversionPatterns(typeConverter, patterns, target);
 
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
       return signalPassFailure();
     }
+
+    // Remove the uncessary tensor ops between each converted arith operation.
+    OpPassManager pipeline("builtin.module");
+    pipeline.addPass(createCSEPass());
+    (void)runPipeline(pipeline, getOperation());
   }
 };
 

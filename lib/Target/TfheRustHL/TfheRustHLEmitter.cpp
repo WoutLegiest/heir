@@ -563,8 +563,12 @@ LogicalResult TfheRustHLEmitter::printOperation(SubOp op) {
 }
 
 LogicalResult TfheRustHLEmitter::printOperation(ScalarRightShiftOp op) {
-  return printBinaryOp(op.getResult(), op.getCiphertext(), op.getShiftAmount(),
-                       ">>");
+  emitAssignPrefix(op.getResult());
+
+  os << checkOrigin(op.getCiphertext())
+     << variableNames->getNameForValue(op.getCiphertext()) << " " << op << " "
+     << op.getShiftAmount() << ";\n";
+  return success();
 }
 
 LogicalResult TfheRustHLEmitter::printOperation(CastOp op) {

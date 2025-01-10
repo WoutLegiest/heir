@@ -298,7 +298,7 @@ def CGGI_SubOp : CGGI_Op<"sub", [
 def CGGI_ShiftRightOp : CGGI_Op<"shr", [
     Pure,
 ]> {
-  let arguments = (ins LWECiphertextLike:$lhs, AnyI8:$shiftAmount);
+  let arguments = (ins LWECiphertextLike:$lhs, IndexAttr:$shiftAmount);
   let results = (outs LWECiphertextLike:$output);
   let summary = "Arithmetic shift to the right of a ciphertext by an integer. Note this operations to mirror the TFHE-rs implmementation.";
 }
@@ -306,7 +306,7 @@ def CGGI_ShiftRightOp : CGGI_Op<"shr", [
 def CGGI_ShiftLeftOp : CGGI_Op<"shl", [
     Pure
 ]> {
-  let arguments = (ins LWECiphertextLike:$lhs, AnyI8:$shiftAmount);
+  let arguments = (ins LWECiphertextLike:$lhs, IndexAttr:$shiftAmount);
   let results = (outs LWECiphertextLike:$output);
   let summary = "Arithmetic shift to left of a ciphertext by an integer. Note this operations to mirror the TFHE-rs implmementation.";
 }

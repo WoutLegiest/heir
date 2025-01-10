@@ -1,0 +1,998 @@
+Loading:
+Loading:
+Loading: 0 packages loaded
+Analyzing: target //tools:heir-opt (0 packages loaded, 0 targets configured)
+INFO: Analyzed target //tools:heir-opt (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+[0 / 1] [Prepa] BazelWorkspaceStatusAction stable-status.txt
+Target //tools:heir-opt up-to-date:
+  bazel-bin/tools/heir-opt
+INFO: Elapsed time: 0.488s, Critical Path: 0.01s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: bazel-bin/tools/heir-opt --arith-to-cggi-quart --debug /usr/local/google/home/legiest/heir/tests/Dialect/Arith/Transforms/quarter_wide.mlir
+Args: /usr/local/google/home/legiest/.cache/bazel/_bazel_legiest/0167411e4815a34188c70d6ec5fca69a/execroot/heir/bazel-out/k8-dbg/bin/tools/heir-opt --arith-to-cggi-quart --debug /usr/local/google/home/legiest/heir/tests/Dialect/Arith/Transforms/quarter_wide.mlir
+Load new dialect in Context builtin
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ShapedType)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::MemRefLayoutAttrInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::BlobAttr)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::TypedAttr)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ElementsAttr)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::DistinctAttr)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::BytecodeOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::SymbolOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpAsmOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::RegionKindInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ConditionallySpeculatable)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::MemoryEffectOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ResourceBlobManagerDialectInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpAsmDialectInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::BytecodeDialectInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::detail::AffineBinaryOpExprStorage)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::detail::AffineConstantExprStorage)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::detail::AffineDimExprStorage)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::detail::AffineMapStorage)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::detail::IntegerSetStorage)
+Load new dialect in Context builtin
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::ZeroOperands<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::OneRegion<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::ZeroResults<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::ZeroSuccessors<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::NoRegionArguments<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::NoTerminator<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::SingleBlock<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::OpInvariants<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::BytecodeOpInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::AffineScope<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::IsIsolatedFromAbove<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::SymbolTable<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::SymbolOpInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpAsmOpInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::RegionKindInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::HasOnlyGraphRegion<Empty>)
+Load new dialect in Context func
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::CallOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::SymbolUserOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::CallableOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::FunctionOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::RegionBranchTerminatorOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::DialectInlinerInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ConvertToLLVMPatternInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::bufferization::BufferizableOpInterface)
+Load new dialect in Context cf
+Load new dialect in Context arith
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::arith::ArithFastMathInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::VectorUnrollOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::InferTypeOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::InferIntRangeInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::arith::ArithIntegerOverflowFlagsInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::CastOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::arith::ArithRoundingModeInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::SelectLikeOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::bufferization::BufferDeallocationOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ValueBoundsOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::BranchOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::mesh::ShardingInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::AutomaticAllocationScope<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::CallableOpInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::FunctionOpInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::ZeroRegions<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::OneResult<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::OneTypedResult<mlir::Type>::Impl<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::ConstantLike<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ConditionallySpeculatable::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::AlwaysSpeculatableImplTrait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::MemoryEffectOpInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::InferIntRangeInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::InferTypeOpInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::arith::detail::ConstantOpGenericAdaptorBase::Properties)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::NOperands<2>::Impl<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::IsCommutative<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::arith::ArithIntegerOverflowFlagsInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::SameOperandsAndResultType<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::VectorUnrollOpInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::Elementwise<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::Scalarizable<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::Vectorizable<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::Tensorizable<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::VariadicOperands<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::HasParent<mlir::func::FuncOp>::Impl<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::MemRefsNormalizable<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::RegionBranchTerminatorOpInterface::Trait<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::ReturnLike<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::IsTerminator<Empty>)
+Load new dialect in Context cggi
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::heir::LUTOpInterface)
+Load new dialect in Context lwe
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::VerifiableTensorEncoding)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::heir::TypeAsmInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::MemRefElementTypeInterface)
+Load new dialect in Context memref
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::CopyOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::PromotableMemOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::DestructurableAccessorOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::PromotableAllocationOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::DestructurableAllocationOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::RegionBranchOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ViewLikeOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ShapedDimOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ReifyRankedShapedTypeOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OffsetSizeAndStrideOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::bufferization::AllocationOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::RuntimeVerifiableOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::DestructurableTypeInterface)
+Load new dialect in Context tensor
+Load new dialect in Context affine
+Load new dialect in Context ub
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ub::PoisonAttrInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::affine::AffineDmaStartOp)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::affine::AffineMapAccessInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::affine::AffineDmaWaitOp)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::LoopLikeOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::affine::AffineReadOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::affine::AffineWriteOpInterface)
+Load new dialect in Context complex
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::DestinationStyleOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::transform::FindPayloadReplacementOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::SubsetOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::SubsetInsertionOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::SubsetExtractionOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::TilingInterface)
+Load new dialect in Context linalg
+Load new dialect in Context math
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::linalg::AggregatedOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::linalg::LinalgOp)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::linalg::ContractionOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::linalg::ConvolutionOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::linalg::FillOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::PartialReductionOpInterface)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::detail::OpToOpPassAdaptor)
+
+//===-------------------------------------------===//
+Legalizing operation : 'builtin.module'(0x56267332f390) {
+} -> SUCCESS : operation marked legal by the target
+//===-------------------------------------------===//
+
+//===-------------------------------------------===//
+Legalizing operation : 'func.func'(0x56267333f270) {
+  * Fold {
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::DialectFoldInterface)
+  } -> FAILURE : unable to fold
+
+  * Pattern : 'func.func -> ()' {
+Trying to match "(anonymous namespace)::FunctionOpInterfaceSignatureConversion"
+    ** Insert Block into : 'func.func'(0x56267333f270)
+"(anonymous namespace)::FunctionOpInterfaceSignatureConversion" result 1
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'func.func'(0x56267333f270) {
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+  } -> SUCCESS : pattern applied successfully
+// *** IR Dump After Pattern Application ***
+type of return operand 0 ('i32') doesn't match function result type ('tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>') in function @test_simple_split2
+mlir-asm-printer: 'builtin.module' failed to verify and will be printed in generic form
+"builtin.module"() ({
+  "func.func"() <{function_type = (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, sym_name = "test_simple_split2"}> ({
+  ^bb0(%arg0: tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>):
+    %0 = "arith.constant"() <{value = 31 : i32}> : () -> i32
+    %1 = "arith.addi"(<<UNKNOWN SSA VALUE>>, %0) <{overflowFlags = #arith.overflow<none>}> : (i32, i32) -> i32
+    "func.return"(%1) : (i32) -> ()
+  }) : () -> ()
+}) : () -> ()
+
+
+} -> SUCCESS
+//===-------------------------------------------===//
+
+//===-------------------------------------------===//
+Legalizing operation : 'arith.constant'(0x56267333e3a0) {
+  %0 = "arith.constant"() <{value = 31 : i32}> : () -> i32
+
+  * Fold {
+  } -> FAILURE : unable to fold
+
+  * Pattern : 'arith.constant -> ()' {
+Trying to match "mlir::heir::arith::ConvertQuartConstantOp"
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::heir::cggi::detail::CreateTrivialOpGenericAdaptorBase::Properties)
+    ** Insert  : 'cggi.create_trivial'(0x56267337c160)
+    ** Insert  : 'cggi.create_trivial'(0x56267337bdd0)
+    ** Insert  : 'cggi.create_trivial'(0x56267337ba60)
+    ** Insert  : 'cggi.create_trivial'(0x56267337b6d0)
+    ** Insert  : 'cggi.create_trivial'(0x56267337b360)
+resultVec: ImplicitTypeIDRegistry::lookupOrInsert(mlir::ValueSemantics<Empty>)
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::ShapedType::Trait<Empty>)
+type of return operand 0 ('i32') doesn't match function result type ('tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>') in function @test_simple_split2
+mlir-asm-printer: 'builtin.module' failed to verify and will be printed in generic form
+%4 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+    ** Insert  : 'arith.constant'(0x5626733772a0)
+    ** Insert  : 'tensor.insert'(0x56267338eb10)
+    ** Insert  : 'arith.constant'(0x562673395970)
+    ** Insert  : 'tensor.insert'(0x5626733959e0)
+    ** Insert  : 'arith.constant'(0x56267338ec00)
+    ** Insert  : 'tensor.insert'(0x562673395b10)
+    ** Insert  : 'arith.constant'(0x562673396480)
+    ** Insert  : 'tensor.insert'(0x562673396520)
+    ** Replace : 'arith.constant'(0x56267333e3a0)
+"mlir::heir::arith::ConvertQuartConstantOp" result 1
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.create_trivial'(0x56267337c160) {
+      %0 = "cggi.create_trivial"() <{value = 31 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.create_trivial'(0x56267337bdd0) {
+      %1 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.create_trivial'(0x56267337ba60) {
+      %2 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.create_trivial'(0x56267337b6d0) {
+      %3 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.create_trivial'(0x56267337b360) {
+      %4 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x5626733772a0) {
+      %5 = "arith.constant"() <{value = 0 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.insert'(0x56267338eb10) {
+      %6 = "tensor.insert"(%0, %4, %5) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673395970) {
+      %7 = "arith.constant"() <{value = 1 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.insert'(0x5626733959e0) {
+      %8 = "tensor.insert"(%1, %6, %7) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x56267338ec00) {
+      %9 = "arith.constant"() <{value = 2 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.insert'(0x562673395b10) {
+      %10 = "tensor.insert"(%2, %8, %9) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673396480) {
+      %11 = "arith.constant"() <{value = 3 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.insert'(0x562673396520) {
+      %12 = "tensor.insert"(%3, %10, %11) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+  } -> SUCCESS : pattern applied successfully
+// *** IR Dump After Pattern Application ***
+type of return operand 0 ('i32') doesn't match function result type ('tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>') in function @test_simple_split2
+mlir-asm-printer: 'func.func' failed to verify and will be printed in generic form
+"func.func"() <{function_type = (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, sym_name = "test_simple_split2"}> ({
+^bb0(%arg0: tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>):
+  %0 = "cggi.create_trivial"() <{value = 31 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %1 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %2 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %3 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %4 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %5 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %6 = "tensor.insert"(%0, %4, %5) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %7 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %8 = "tensor.insert"(%1, %6, %7) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %9 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %10 = "tensor.insert"(%2, %8, %9) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %11 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %12 = "tensor.insert"(%3, %10, %11) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %13 = "arith.constant"() <{value = 31 : i32}> : () -> i32
+  %14 = "arith.addi"(<<UNKNOWN SSA VALUE>>, %13) <{overflowFlags = #arith.overflow<none>}> : (i32, i32) -> i32
+  "func.return"(%14) : (i32) -> ()
+}) : () -> ()
+
+
+} -> SUCCESS
+//===-------------------------------------------===//
+
+//===-------------------------------------------===//
+Legalizing operation : 'arith.addi'(0x56267332a240) {
+  %14 = "arith.addi"(<<UNKNOWN SSA VALUE>>, %13) <{overflowFlags = #arith.overflow<none>}> : (i32, i32) -> i32
+
+  * Fold {
+  } -> FAILURE : unable to fold
+
+  * Pattern : 'arith.addi -> ()' {
+Trying to match "mlir::heir::arith::ConvertQuartAddI"
+    ** Insert  : 'arith.constant'(0x562673396650)
+    ** Insert  : 'tensor.extract'(0x562673339f20)
+    ** Insert  : 'arith.constant'(0x562673396fb0)
+    ** Insert  : 'tensor.extract'(0x562673365500)
+    ** Insert  : 'arith.constant'(0x5626733940f0)
+    ** Insert  : 'tensor.extract'(0x562673394160)
+    ** Insert  : 'arith.constant'(0x562673394240)
+    ** Insert  : 'tensor.extract'(0x5626733942e0)
+    ** Insert  : 'arith.constant'(0x562673368f10)
+    ** Insert  : 'tensor.extract'(0x5626733943c0)
+    ** Insert  : 'arith.constant'(0x5626733944a0)
+    ** Insert  : 'tensor.extract'(0x562673394540)
+    ** Insert  : 'arith.constant'(0x562673394620)
+    ** Insert  : 'tensor.extract'(0x5626733946c0)
+    ** Insert  : 'arith.constant'(0x5626733947a0)
+    ** Insert  : 'tensor.extract'(0x562673394840)
+    ** Insert  : 'arith.constant'(0x562673394df0)
+    ** Insert  : 'cggi.add'(0x562673394e90)
+    ** Insert  : 'cggi.cast'(0x562673393430)
+    ** Insert  : 'cggi.cast'(0x562673394fa0)
+    ** Insert  : 'cggi.shr'(0x562673398090)
+    ** Insert  : 'cggi.add'(0x562673398140)
+    ** Insert  : 'cggi.cast'(0x562673395060)
+    ** Insert  : 'cggi.cast'(0x5626733981f0)
+    ** Insert  : 'cggi.shr'(0x5626733982b0)
+    ** Insert  : 'cggi.add'(0x562673398390)
+    ** Insert  : 'cggi.add'(0x562673398470)
+    ** Insert  : 'cggi.cast'(0x562673398550)
+    ** Insert  : 'cggi.cast'(0x562673398610)
+    ** Insert  : 'cggi.shr'(0x5626733986d0)
+    ** Insert  : 'cggi.add'(0x5626733987b0)
+    ** Insert  : 'cggi.add'(0x562673398890)
+    ** Insert  : 'cggi.cast'(0x562673398970)
+    ** Insert  : 'cggi.cast'(0x562673398a30)
+    ** Insert  : 'cggi.add'(0x562673398af0)
+    ** Insert  : 'cggi.create_trivial'(0x562673398bd0)
+resultVec: 'cggi.shr' op operand #1 must be index, but got 'i8'
+mlir-asm-printer: 'builtin.module' failed to verify and will be printed in generic form
+%49 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+    ** Insert  : 'arith.constant'(0x562673398e20)
+    ** Insert  : 'tensor.insert'(0x562673396eb0)
+    ** Insert  : 'arith.constant'(0x562673399010)
+    ** Insert  : 'tensor.insert'(0x562673399080)
+    ** Insert  : 'arith.constant'(0x562673399180)
+    ** Insert  : 'tensor.insert'(0x562673399220)
+    ** Insert  : 'arith.constant'(0x562673399320)
+    ** Insert  : 'tensor.insert'(0x5626733993c0)
+    ** Replace : 'arith.addi'(0x56267332a240)
+"mlir::heir::arith::ConvertQuartAddI" result 1
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673396650) {
+      %14 = "arith.constant"() <{value = 0 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.extract'(0x562673339f20) {
+      %15 = "tensor.extract"(%arg0, %14) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673396fb0) {
+      %16 = "arith.constant"() <{value = 1 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.extract'(0x562673365500) {
+      %17 = "tensor.extract"(%arg0, %16) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x5626733940f0) {
+      %18 = "arith.constant"() <{value = 2 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.extract'(0x562673394160) {
+      %19 = "tensor.extract"(%arg0, %18) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673394240) {
+      %20 = "arith.constant"() <{value = 3 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.extract'(0x5626733942e0) {
+      %21 = "tensor.extract"(%arg0, %20) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673368f10) {
+      %22 = "arith.constant"() <{value = 0 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.extract'(0x5626733943c0) {
+      %23 = "tensor.extract"(%12, %22) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x5626733944a0) {
+      %24 = "arith.constant"() <{value = 1 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.extract'(0x562673394540) {
+      %25 = "tensor.extract"(%12, %24) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673394620) {
+      %26 = "arith.constant"() <{value = 2 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.extract'(0x5626733946c0) {
+      %27 = "tensor.extract"(%12, %26) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x5626733947a0) {
+      %28 = "arith.constant"() <{value = 3 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.extract'(0x562673394840) {
+      %29 = "tensor.extract"(%12, %28) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673394df0) {
+      %30 = "arith.constant"() <{value = 8 : i8}> : () -> i8
+
+      * Fold {
+      } -> FAILURE : unable to fold
+
+      * Pattern : 'arith.constant -> ()' {
+Trying to match "mlir::heir::arith::ConvertQuartConstantOp"
+        ** Insert  : 'cggi.create_trivial'(0x56267339bee0)
+        ** Insert  : 'cggi.create_trivial'(0x56267339bf40)
+resultVec: 'cggi.shr' op operand #1 must be index, but got 'i8'
+mlir-asm-printer: 'builtin.module' failed to verify and will be printed in generic form
+%31 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+        ** Insert  : 'arith.constant'(0x56267339c070)
+        ** Insert  : 'tensor.insert'(0x56267339bfa0)
+        ** Replace : 'arith.constant'(0x562673394df0)
+"mlir::heir::arith::ConvertQuartConstantOp" result 1
+
+        //===-------------------------------------------===//
+        Legalizing operation : 'cggi.create_trivial'(0x56267339bee0) {
+          %30 = "cggi.create_trivial"() <{value = 8 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+        } -> SUCCESS : operation marked legal by the target
+        //===-------------------------------------------===//
+
+        //===-------------------------------------------===//
+        Legalizing operation : 'cggi.create_trivial'(0x56267339bf40) {
+          %31 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+        } -> SUCCESS : operation marked legal by the target
+        //===-------------------------------------------===//
+
+        //===-------------------------------------------===//
+        Legalizing operation : 'arith.constant'(0x56267339c070) {
+          %32 = "arith.constant"() <{value = 0 : index}> : () -> index
+
+        } -> SUCCESS : operation marked legal by the target
+        //===-------------------------------------------===//
+
+        //===-------------------------------------------===//
+        Legalizing operation : 'tensor.insert'(0x56267339bfa0) {
+          %33 = "tensor.insert"(%30, %31, %32) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+        } -> SUCCESS : operation marked legal by the target
+        //===-------------------------------------------===//
+      } -> SUCCESS : pattern applied successfully
+// *** IR Dump After Pattern Application ***
+'cggi.shr' op operand #1 must be index, but got 'i8'
+mlir-asm-printer: 'func.func' failed to verify and will be printed in generic form
+"func.func"() <{function_type = (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, sym_name = "test_simple_split2"}> ({
+^bb0(%arg0: tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>):
+  %0 = "cggi.create_trivial"() <{value = 31 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %1 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %2 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %3 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %4 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %5 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %6 = "tensor.insert"(%0, %4, %5) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %7 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %8 = "tensor.insert"(%1, %6, %7) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %9 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %10 = "tensor.insert"(%2, %8, %9) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %11 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %12 = "tensor.insert"(%3, %10, %11) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %13 = "arith.constant"() <{value = 31 : i32}> : () -> i32
+  %14 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %15 = "tensor.extract"(%arg0, %14) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %16 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %17 = "tensor.extract"(%arg0, %16) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %18 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %19 = "tensor.extract"(%arg0, %18) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %20 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %21 = "tensor.extract"(%arg0, %20) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %22 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %23 = "tensor.extract"(%12, %22) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %24 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %25 = "tensor.extract"(%12, %24) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %26 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %27 = "tensor.extract"(%12, %26) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %28 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %29 = "tensor.extract"(%12, %28) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %30 = "cggi.create_trivial"() <{value = 8 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %31 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %32 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %33 = "tensor.insert"(%30, %31, %32) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %34 = "arith.constant"() <{value = 8 : i8}> : () -> i8
+  %35 = "cggi.add"(%15, %23) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %36 = "cggi.cast"(%35) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %37 = "cggi.cast"(%36) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %38 = "cggi.shr"(%35, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %39 = "cggi.add"(%17, %25) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %40 = "cggi.cast"(%39) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %41 = "cggi.cast"(%40) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %42 = "cggi.shr"(%39, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %43 = "cggi.add"(%41, %38) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %44 = "cggi.add"(%19, %27) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %45 = "cggi.cast"(%44) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %46 = "cggi.cast"(%45) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %47 = "cggi.shr"(%44, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %48 = "cggi.add"(%46, %42) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %49 = "cggi.add"(%21, %29) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %50 = "cggi.cast"(%49) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %51 = "cggi.cast"(%50) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %52 = "cggi.add"(%51, %47) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %53 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %54 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %55 = "tensor.insert"(%37, %53, %54) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %56 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %57 = "tensor.insert"(%43, %55, %56) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %58 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %59 = "tensor.insert"(%48, %57, %58) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %60 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %61 = "tensor.insert"(%52, %59, %60) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %62 = "arith.addi"(<<UNKNOWN SSA VALUE>>, %13) <{overflowFlags = #arith.overflow<none>}> : (i32, i32) -> i32
+  "func.return"(%62) : (i32) -> ()
+}) : () -> ()
+
+
+    } -> SUCCESS
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.add'(0x562673394e90) {
+      %35 = "cggi.add"(%15, %23) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.cast'(0x562673393430) {
+      %36 = "cggi.cast"(%35) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.cast'(0x562673394fa0) {
+      %37 = "cggi.cast"(%36) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.shr'(0x562673398090) {
+      %38 = "cggi.shr"(%35, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.add'(0x562673398140) {
+      %39 = "cggi.add"(%17, %25) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.cast'(0x562673395060) {
+      %40 = "cggi.cast"(%39) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.cast'(0x5626733981f0) {
+      %41 = "cggi.cast"(%40) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.shr'(0x5626733982b0) {
+      %42 = "cggi.shr"(%39, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.add'(0x562673398390) {
+      %43 = "cggi.add"(%41, %38) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.add'(0x562673398470) {
+      %44 = "cggi.add"(%19, %27) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.cast'(0x562673398550) {
+      %45 = "cggi.cast"(%44) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.cast'(0x562673398610) {
+      %46 = "cggi.cast"(%45) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.shr'(0x5626733986d0) {
+      %47 = "cggi.shr"(%44, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.add'(0x5626733987b0) {
+      %48 = "cggi.add"(%46, %42) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.add'(0x562673398890) {
+      %49 = "cggi.add"(%21, %29) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.cast'(0x562673398970) {
+      %50 = "cggi.cast"(%49) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.cast'(0x562673398a30) {
+      %51 = "cggi.cast"(%50) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.add'(0x562673398af0) {
+      %52 = "cggi.add"(%51, %47) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'cggi.create_trivial'(0x562673398bd0) {
+      %53 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673398e20) {
+      %54 = "arith.constant"() <{value = 0 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.insert'(0x562673396eb0) {
+      %55 = "tensor.insert"(%37, %53, %54) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673399010) {
+      %56 = "arith.constant"() <{value = 1 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.insert'(0x562673399080) {
+      %57 = "tensor.insert"(%43, %55, %56) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673399180) {
+      %58 = "arith.constant"() <{value = 2 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.insert'(0x562673399220) {
+      %59 = "tensor.insert"(%48, %57, %58) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'arith.constant'(0x562673399320) {
+      %60 = "arith.constant"() <{value = 3 : index}> : () -> index
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'tensor.insert'(0x5626733993c0) {
+      %61 = "tensor.insert"(%52, %59, %60) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+  } -> SUCCESS : pattern applied successfully
+// *** IR Dump After Pattern Application ***
+'cggi.shr' op operand #1 must be index, but got 'i8'
+mlir-asm-printer: 'func.func' failed to verify and will be printed in generic form
+"func.func"() <{function_type = (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, sym_name = "test_simple_split2"}> ({
+^bb0(%arg0: tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>):
+  %0 = "cggi.create_trivial"() <{value = 31 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %1 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %2 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %3 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %4 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %5 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %6 = "tensor.insert"(%0, %4, %5) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %7 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %8 = "tensor.insert"(%1, %6, %7) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %9 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %10 = "tensor.insert"(%2, %8, %9) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %11 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %12 = "tensor.insert"(%3, %10, %11) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %13 = "arith.constant"() <{value = 31 : i32}> : () -> i32
+  %14 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %15 = "tensor.extract"(%arg0, %14) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %16 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %17 = "tensor.extract"(%arg0, %16) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %18 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %19 = "tensor.extract"(%arg0, %18) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %20 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %21 = "tensor.extract"(%arg0, %20) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %22 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %23 = "tensor.extract"(%12, %22) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %24 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %25 = "tensor.extract"(%12, %24) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %26 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %27 = "tensor.extract"(%12, %26) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %28 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %29 = "tensor.extract"(%12, %28) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %30 = "cggi.create_trivial"() <{value = 8 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %31 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %32 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %33 = "tensor.insert"(%30, %31, %32) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %34 = "arith.constant"() <{value = 8 : i8}> : () -> i8
+  %35 = "cggi.add"(%15, %23) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %36 = "cggi.cast"(%35) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %37 = "cggi.cast"(%36) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %38 = "cggi.shr"(%35, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %39 = "cggi.add"(%17, %25) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %40 = "cggi.cast"(%39) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %41 = "cggi.cast"(%40) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %42 = "cggi.shr"(%39, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %43 = "cggi.add"(%41, %38) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %44 = "cggi.add"(%19, %27) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %45 = "cggi.cast"(%44) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %46 = "cggi.cast"(%45) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %47 = "cggi.shr"(%44, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %48 = "cggi.add"(%46, %42) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %49 = "cggi.add"(%21, %29) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %50 = "cggi.cast"(%49) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %51 = "cggi.cast"(%50) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %52 = "cggi.add"(%51, %47) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %53 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %54 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %55 = "tensor.insert"(%37, %53, %54) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %56 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %57 = "tensor.insert"(%43, %55, %56) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %58 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %59 = "tensor.insert"(%48, %57, %58) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %60 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %61 = "tensor.insert"(%52, %59, %60) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %62 = "arith.addi"(<<UNKNOWN SSA VALUE>>, %13) <{overflowFlags = #arith.overflow<none>}> : (i32, i32) -> i32
+  "func.return"(%62) : (i32) -> ()
+}) : () -> ()
+
+
+} -> SUCCESS
+//===-------------------------------------------===//
+
+//===-------------------------------------------===//
+Legalizing operation : 'func.return'(0x56267333ed80) {
+  "func.return"(%62) : (i32) -> ()
+
+  * Fold {
+  } -> FAILURE : unable to fold
+
+  * Pattern : 'func.return -> ()' {
+Trying to match "(anonymous namespace)::ReturnOpTypeConversion"
+    ** Insert  : 'func.return'(0x5626733792d0)
+    ** Replace : 'func.return'(0x56267333ed80)
+"(anonymous namespace)::ReturnOpTypeConversion" result 1
+
+    //===-------------------------------------------===//
+    Legalizing operation : 'func.return'(0x5626733792d0) {
+      "func.return"(%61) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>) -> ()
+
+    } -> SUCCESS : operation marked legal by the target
+    //===-------------------------------------------===//
+  } -> SUCCESS : pattern applied successfully
+// *** IR Dump After Pattern Application ***
+'cggi.shr' op operand #1 must be index, but got 'i8'
+mlir-asm-printer: 'func.func' failed to verify and will be printed in generic form
+"func.func"() <{function_type = (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, sym_name = "test_simple_split2"}> ({
+^bb0(%arg0: tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>):
+  %0 = "cggi.create_trivial"() <{value = 31 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %1 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %2 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %3 = "cggi.create_trivial"() <{value = 0 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %4 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %5 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %6 = "tensor.insert"(%0, %4, %5) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %7 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %8 = "tensor.insert"(%1, %6, %7) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %9 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %10 = "tensor.insert"(%2, %8, %9) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %11 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %12 = "tensor.insert"(%3, %10, %11) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %13 = "arith.constant"() <{value = 31 : i32}> : () -> i32
+  %14 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %15 = "tensor.extract"(%arg0, %14) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %16 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %17 = "tensor.extract"(%arg0, %16) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %18 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %19 = "tensor.extract"(%arg0, %18) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %20 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %21 = "tensor.extract"(%arg0, %20) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %22 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %23 = "tensor.extract"(%12, %22) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %24 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %25 = "tensor.extract"(%12, %24) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %26 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %27 = "tensor.extract"(%12, %26) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %28 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %29 = "tensor.extract"(%12, %28) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %30 = "cggi.create_trivial"() <{value = 8 : i16}> : () -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %31 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %32 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %33 = "tensor.insert"(%30, %31, %32) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %34 = "arith.constant"() <{value = 8 : i8}> : () -> i8
+  %35 = "cggi.add"(%15, %23) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %36 = "cggi.cast"(%35) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %37 = "cggi.cast"(%36) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %38 = "cggi.shr"(%35, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %39 = "cggi.add"(%17, %25) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %40 = "cggi.cast"(%39) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %41 = "cggi.cast"(%40) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %42 = "cggi.shr"(%39, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %43 = "cggi.add"(%41, %38) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %44 = "cggi.add"(%19, %27) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %45 = "cggi.cast"(%44) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %46 = "cggi.cast"(%45) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %47 = "cggi.shr"(%44, %34) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %48 = "cggi.add"(%46, %42) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %49 = "cggi.add"(%21, %29) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %50 = "cggi.cast"(%49) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>
+  %51 = "cggi.cast"(%50) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 8>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %52 = "cggi.add"(%51, %47) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+  %53 = "cggi.create_trivial"() <{value = 0 : i8}> : () -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %54 = "arith.constant"() <{value = 0 : index}> : () -> index
+  %55 = "tensor.insert"(%37, %53, %54) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %56 = "arith.constant"() <{value = 1 : index}> : () -> index
+  %57 = "tensor.insert"(%43, %55, %56) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %58 = "arith.constant"() <{value = 2 : index}> : () -> index
+  %59 = "tensor.insert"(%48, %57, %58) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %60 = "arith.constant"() <{value = 3 : index}> : () -> index
+  %61 = "tensor.insert"(%52, %59, %60) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>, index) -> tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>
+  %62 = "arith.addi"(<<UNKNOWN SSA VALUE>>, %13) <{overflowFlags = #arith.overflow<none>}> : (i32, i32) -> i32
+  "func.return"(%61) : (tensor<4x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>) -> ()
+  "func.return"(%62) : (i32) -> ()
+}) : () -> ()
+
+
+} -> SUCCESS
+//===-------------------------------------------===//
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::OpTrait::VariadicResults<Empty>)
+'cggi.shr' op operand #1 must be index, but got 'i8'
+mlir-asm-printer: 'func.func' failed to verify and will be printed in generic form
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::AttributeTrait::IsLocation<Empty>)
+/usr/local/google/home/legiest/heir/tests/Dialect/Arith/Transforms/quarter_wide.mlir:24:8: error: failed to legalize unresolved materialization from ('tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>') to ('i8') that remained live after conversion
+  %7 = arith.addi %arg0, %2 : i32
+       ^
+/usr/local/google/home/legiest/heir/tests/Dialect/Arith/Transforms/quarter_wide.mlir:24:8: note: see current operation: %33 = "builtin.unrealized_conversion_cast"(%32) : (tensor<1x!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>>) -> i8
+/usr/local/google/home/legiest/heir/tests/Dialect/Arith/Transforms/quarter_wide.mlir:24:8: note: see existing live user here: %37 = "cggi.shr"(%34, %33) : (!lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>, i8) -> !lwe.lwe_ciphertext<encoding = #lwe.unspecified_bit_field_encoding<cleartext_bitwidth = 16>>
+ImplicitTypeIDRegistry::lookupOrInsert(mlir::detail::PreservedAnalyses::AllAnalysesType)
