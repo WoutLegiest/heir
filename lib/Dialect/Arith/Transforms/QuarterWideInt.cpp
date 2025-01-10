@@ -1,14 +1,18 @@
 #include "lib/Dialect/Arith/Transforms/QuarterWideInt.h"
 
+#include <cmath>
+#include <cstdint>
 #include <optional>
 
 #include "lib/Utils/ConversionUtils.h"
-#include "llvm/include/llvm/ADT/APInt.h"                // from @llvm-project
-#include "llvm/include/llvm/Support/Debug.h"            // from @llvm-project
-#include "llvm/include/llvm/Support/FormatVariadic.h"   // from @llvm-project
+#include "llvm/include/llvm/ADT/APInt.h"               // from @llvm-project
+#include "llvm/include/llvm/Support/Debug.h"           // from @llvm-project
+#include "llvm/include/llvm/Support/FormatVariadic.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/Affine/IR/AffineOps.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"   // from @llvm-project
 #include "mlir/include/mlir/Dialect/Func/IR/FuncOps.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Func/Transforms/FuncConversions.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/MemRef/IR/MemRef.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Tensor/IR/Tensor.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Vector/IR/VectorOps.h"  // from @llvm-project
 #include "mlir/include/mlir/IR/BuiltinTypes.h"          // from @llvm-project
@@ -36,13 +40,17 @@ class QuarterWideTypeConverter : public TypeConverter {
 
     // Scalar case.
     addConversion([](IntegerType ty) -> std::optional<Type> {
-      unsigned width = ty.getWidth();
-      if (width <= maxIntWidth) return ty;
+      float width = ty.getWidth();
+      float realWidth = maxIntWidth >> 1;
 
-      // i2N --> tensor<4xiN>
-      if (width == 2 * maxIntWidth)
-        return RankedTensorType::get(
-            4, IntegerType::get(ty.getContext(), maxIntWidth));
+      if (width < maxIntWidth) return ty;
+
+      uint8_t nbChunks = ceil(width / realWidth);
+
+      if (width > 64) return std::nullopt;
+
+      return RankedTensorType::get(
+          {nbChunks}, IntegerType::get(ty.getContext(), maxIntWidth));
 
       return std::nullopt;
     });
@@ -52,16 +60,28 @@ class QuarterWideTypeConverter : public TypeConverter {
       auto intTy = dyn_cast<IntegerType>(ty.getElementType());
       if (!intTy) return ty;
 
-      unsigned width = intTy.getWidth();
-      if (width <= maxIntWidth) return ty;
+      float width = intTy.getWidth();
+      float realWidth = maxIntWidth >> 1;
 
-      // tensor<...xi2N> --> tensor<...x4xiN>
-      if (width == 2 * maxIntWidth) {
-        auto newShape = to_vector(ty.getShape());
-        newShape.push_back(4);
+      uint8_t nbChunks = ceil(width / realWidth);
+
+      if (width > 64) return std::nullopt;
+
+      if (intTy.getIntOrFloatBitWidth() == maxIntWidth) return ty;
+
+      auto newShape = to_vector(ty.getShape());
+      newShape.push_back(nbChunks);
+
+      if (isa<RankedTensorType>(ty)) {
         return RankedTensorType::get(
             newShape, IntegerType::get(ty.getContext(), maxIntWidth));
       }
+
+      if (isa<MemRefType>(ty)) {
+        return MemRefType::get(newShape,
+                               IntegerType::get(ty.getContext(), maxIntWidth));
+      }
+
       return std::nullopt;
     });
   }
@@ -75,24 +95,47 @@ class QuarterWideTypeConverter : public TypeConverter {
 /// N = `newBitWidth/2`. Treats `value` as a 2*N bits-wide integer. The bottom
 /// bits are returned in the first pair element, while the top bits in the
 /// fourth one.
-std::tuple<APInt, APInt, APInt, APInt> getQuarters(const APInt &value,
-                                                   unsigned newBitWidth) {
-  auto acutalBitWidth = newBitWidth >> 1;
+// static std::tuple<APInt, APInt, APInt, APInt> getQuarters(
+//     const APInt &value, unsigned newBitWidth) {
+//   auto acutalBitWidth = newBitWidth >> 1;
 
-  APInt low = value.extractBits(acutalBitWidth, 0);
-  APInt midLow = value.extractBits(acutalBitWidth, acutalBitWidth);
-  APInt midHigh = value.extractBits(acutalBitWidth, 2 * acutalBitWidth);
-  APInt high = value.extractBits(acutalBitWidth, 3 * acutalBitWidth);
-  return {std::move(low), std::move(midLow), std::move(midHigh),
-          std::move(high)};
-}
+//   APInt low = value.extractBits(acutalBitWidth, 0);
+//   llvm::dbgs() << "Working \n";
+//   llvm::dbgs() << "low: " << low << "\n";
+
+//   // Split i32 into 4xi8
+//   if (value.getBitWidth() == 2 * newBitWidth) {
+//     APInt midLow = value.extractBits(acutalBitWidth, acutalBitWidth);
+//     APInt midHigh = value.extractBits(acutalBitWidth, 2 * acutalBitWidth);
+//     APInt high = value.extractBits(acutalBitWidth, 3 * acutalBitWidth);
+//     return {std::move(low), std::move(midLow), std::move(midHigh),
+//             std::move(high)};
+//   }
+
+//   // Split i8 into 0,0,0,i8
+//   if (value.getBitWidth() == acutalBitWidth) {
+//     APInt zero = APInt(acutalBitWidth, 0);
+//     return {std::move(low), std::move(zero), std::move(zero),
+//     std::move(zero)};
+//   }
+
+//   // Split i16 into 0,0,i8,i8
+//   if (value.getBitWidth() == newBitWidth) {
+//     APInt zero = APInt(acutalBitWidth, 0);
+//     APInt midLow = value.extractBits(acutalBitWidth, acutalBitWidth);
+//     return {std::move(low), std::move(midLow), std::move(zero),
+//             std::move(zero)};
+//   }
+//   return {APInt(acutalBitWidth, 0), APInt(acutalBitWidth, 0),
+//           APInt(acutalBitWidth, 0), APInt(acutalBitWidth, 0)};
+// }
 
 /// Returns the type with the last (innermost) dimension reduced to x1.
 /// Scalarizes 1D tensor inputs to match how we extract/insert tensor values,
 /// e.g.:
 ///   - tensor<3x2xi16> --> tensor<3x1xi16>
 ///   - tensor<2xi16>   --> i16
-Type reduceInnermostDim(RankedTensorType type) {
+static Type reduceInnermostDim(RankedTensorType type) {
   if (type.getShape().size() == 1) return type.getElementType();
 
   auto newShape = to_vector(type.getShape());
@@ -104,8 +147,9 @@ Type reduceInnermostDim(RankedTensorType type) {
 /// by `lastOffset`. Returns a value of tensor type with the last dimension
 /// reduced to x1 or fully scalarized, e.g.:
 ///   - tensor<2xi16>   --> i16
-Value extractLastDimSlice(ConversionPatternRewriter &rewriter, Location loc,
-                          Value input, int64_t lastOffset) {
+static Value extractLastDimSlice(ConversionPatternRewriter &rewriter,
+                                 Location loc, Value input,
+                                 int64_t lastOffset) {
   ArrayRef<int64_t> shape = cast<RankedTensorType>(input.getType()).getShape();
   assert(lastOffset < shape.back() && "Offset out of bounds");
 
@@ -132,7 +176,7 @@ Value extractLastDimSlice(ConversionPatternRewriter &rewriter, Location loc,
 
 /// Extracts four tensor slices from the `input` whose type is `tensor<...x4T>`,
 /// with the first element at offset 0, second element at offset 1 and so on.
-std::tuple<Value, Value, Value, Value> extractLastDimHalves(
+static std::tuple<Value, Value, Value, Value> extractLastDimHalves(
     ConversionPatternRewriter &rewriter, Location loc, Value input) {
   return {extractLastDimSlice(rewriter, loc, input, 0),
           extractLastDimSlice(rewriter, loc, input, 1),
@@ -143,51 +187,54 @@ std::tuple<Value, Value, Value, Value> extractLastDimHalves(
 /// Inserts the `source` tensor slice into the `dest` tensor at offset
 /// `lastOffset` in the last dimension. `source` can be a scalar when `dest` is
 /// a 1D tensor.
-Value insertLastDimSlice(ConversionPatternRewriter &rewriter, Location loc,
-                         Value source, Value dest, int64_t lastOffset) {
-  ArrayRef<int64_t> shape = cast<RankedTensorType>(dest.getType()).getShape();
-  assert(lastOffset < shape.back() && "Offset out of bounds");
+// static Value insertLastDimSlice(ConversionPatternRewriter &rewriter,
+//                                 Location loc, Value source, Value dest,
+//                                 int64_t lastOffset) {
+//   ArrayRef<int64_t> shape =
+//   cast<RankedTensorType>(dest.getType()).getShape(); assert(lastOffset <
+//   shape.back() && "Offset out of bounds");
 
-  // Handle scalar source.
-  if (isa<IntegerType>(source.getType())) {
-    auto intAttr = rewriter.getIntegerAttr(rewriter.getIndexType(), lastOffset);
-    auto constantOp = rewriter.create<mlir::arith::ConstantOp>(loc, intAttr);
-    SmallVector<Value, 1> indices;
-    indices.push_back(constantOp.getResult());
+//   // Handle scalar source.
+//   if (isa<IntegerType>(source.getType())) {
+//     auto intAttr = rewriter.getIntegerAttr(rewriter.getIndexType(),
+//     lastOffset); auto constantOp =
+//     rewriter.create<mlir::arith::ConstantOp>(loc, intAttr);
+//     SmallVector<Value, 1> indices;
+//     indices.push_back(constantOp.getResult());
 
-    return rewriter.create<tensor::InsertOp>(loc, source, dest, indices);
-  }
+//     return rewriter.create<tensor::InsertOp>(loc, source, dest, indices);
+//   }
 
-  SmallVector<OpFoldResult> offsets(shape.size(), rewriter.getIndexAttr(0));
-  offsets.back() = rewriter.getIndexAttr(lastOffset);
-  SmallVector<OpFoldResult> sizes(shape.size());
-  sizes.back() = rewriter.getIndexAttr(1);
-  SmallVector<OpFoldResult> strides(shape.size(), rewriter.getIndexAttr(1));
+//   SmallVector<OpFoldResult> offsets(shape.size(), rewriter.getIndexAttr(0));
+//   offsets.back() = rewriter.getIndexAttr(lastOffset);
+//   SmallVector<OpFoldResult> sizes(shape.size());
+//   sizes.back() = rewriter.getIndexAttr(1);
+//   SmallVector<OpFoldResult> strides(shape.size(), rewriter.getIndexAttr(1));
 
-  return rewriter.create<tensor::InsertSliceOp>(loc, source, dest, offsets,
-                                                sizes, strides);
-}
+//   return rewriter.create<tensor::InsertSliceOp>(loc, source, dest, offsets,
+//                                                 sizes, strides);
+// }
 
-Value createScalarOrSplatConstant(OpBuilder &builder, Location loc, Type type,
-                                  int64_t value) {
-  unsigned elementBitWidth = 0;
-  if (auto intTy = dyn_cast<IntegerType>(type))
-    elementBitWidth = intTy.getWidth();
-  else
-    elementBitWidth = cast<ShapedType>(type).getElementTypeBitWidth();
+// static Value createScalarOrSplatConstant(OpBuilder &builder, Location loc,
+//                                          Type type, int64_t value) {
+//   unsigned elementBitWidth = 0;
+//   if (auto intTy = dyn_cast<IntegerType>(type))
+//     elementBitWidth = intTy.getWidth();
+//   else
+//     elementBitWidth = cast<ShapedType>(type).getElementTypeBitWidth();
 
-  auto apValue = APInt(elementBitWidth, value);
+//   auto apValue = APInt(elementBitWidth, value);
 
-  TypedAttr attr;
-  if (isa<IntegerType>(type)) {
-    attr = builder.getIntegerAttr(type, apValue);
-  } else {
-    auto vecTy = cast<ShapedType>(type);
-    attr = SplatElementsAttr::get(vecTy, apValue);
-  }
+//   TypedAttr attr;
+//   if (isa<IntegerType>(type)) {
+//     attr = builder.getIntegerAttr(type, apValue);
+//   } else {
+//     auto vecTy = cast<ShapedType>(type);
+//     attr = SplatElementsAttr::get(vecTy, apValue);
+//   }
 
-  return builder.create<mlir::arith::ConstantOp>(loc, attr);
-}
+//   return builder.create<mlir::arith::ConstantOp>(loc, attr);
+// }
 
 /// Constructs a new tensor of type `resultType` by creating a series of
 /// insertions of `resultComponents`, each at the next offset of the last tensor
@@ -195,15 +242,15 @@ Value createScalarOrSplatConstant(OpBuilder &builder, Location loc, Type type,
 /// When all `resultComponents` are scalars, the result type is `tensor<NxT>`;
 /// when `resultComponents` are `tensor<...x1xT>`s, the result type is
 /// `tensor<...xNxT>`, where `N` is the number of `resultComponents`.
-Value constructResultTensor(ConversionPatternRewriter &rewriter, Location loc,
-                            RankedTensorType resultType,
-                            ValueRange resultComponents) {
-  Value resultVec = createScalarOrSplatConstant(rewriter, loc, resultType, 0);
-  for (auto [i, component] : llvm::enumerate(resultComponents))
-    resultVec = insertLastDimSlice(rewriter, loc, component, resultVec, i);
+// static Value constructResultTensor(ConversionPatternRewriter &rewriter,
+//                                    Location loc, RankedTensorType resultType,
+//                                    ValueRange resultComponents) {
+//   Value resultVec = createScalarOrSplatConstant(rewriter, loc, resultType,
+//   0); for (auto [i, component] : llvm::enumerate(resultComponents))
+//     resultVec = insertLastDimSlice(rewriter, loc, component, resultVec, i);
 
-  return resultVec;
-}
+//   return resultVec;
+// }
 
 struct ConvertAddI final : OpConversionPattern<mlir::arith::AddIOp> {
   using OpConversionPattern::OpConversionPattern;
@@ -370,6 +417,7 @@ struct ConvertArithConstant final
       ConversionPatternRewriter &rewriter) const override {
     Type oldType = op.getType();
     auto newType = getTypeConverter()->convertType<RankedTensorType>(oldType);
+    auto acutalBitWidth = maxIntWidth >> 1;
 
     if (!newType)
       return rewriter.notifyMatchFailure(
@@ -377,27 +425,36 @@ struct ConvertArithConstant final
 
     unsigned newBitWidth = newType.getElementTypeBitWidth();
     Attribute oldValue = op.getValueAttr();
+    auto tenShape = newType.getShape();
+    auto nbChunks = tenShape.back();
+    SmallVector<APInt> intChunks;
 
     if (auto intAttr = dyn_cast<IntegerAttr>(oldValue)) {
-      auto [low, midLow, midHigh, high] =
-          getQuarters(intAttr.getValue(), newBitWidth);
-      auto newAttr =
-          DenseElementsAttr::get(newType, {low, midLow, midHigh, high});
+      for (uint8_t i = 0; i < nbChunks; i++) {
+        APInt intChunck =
+            intAttr.getValue().extractBits(acutalBitWidth, i * acutalBitWidth);
+        intChunks.push_back(intChunck);
+      }
+      auto newAttr = DenseElementsAttr::get(newType, intChunks);
       rewriter.replaceOpWithNewOp<mlir::arith::ConstantOp>(op, newAttr);
+
       return success();
     }
 
     if (auto splatAttr = dyn_cast<SplatElementsAttr>(oldValue)) {
-      auto [low, midLow, midHigh, high] =
-          getQuarters(splatAttr.getSplatValue<APInt>(), newBitWidth);
+      for (uint8_t i = 0; i < nbChunks; i++) {
+        APInt intChunck = splatAttr.getSplatValue<APInt>().extractBits(
+            acutalBitWidth, i * acutalBitWidth);
+        intChunks.push_back(intChunck);
+      }
+
       int64_t numSplatElems = splatAttr.getNumElements();
       SmallVector<APInt> values;
-      values.reserve(numSplatElems * 4);
+      values.reserve(numSplatElems * nbChunks);
       for (int64_t i = 0; i < numSplatElems; ++i) {
-        values.push_back(low);
-        values.push_back(midLow);
-        values.push_back(midHigh);
-        values.push_back(high);
+        for (int8_t j = 0; j < nbChunks; ++j) {
+          values.push_back(intChunks[j]);
+        }
       }
 
       auto attr = DenseElementsAttr::get(newType, values);
@@ -408,13 +465,13 @@ struct ConvertArithConstant final
     if (auto elemsAttr = dyn_cast<DenseElementsAttr>(oldValue)) {
       int64_t numElems = elemsAttr.getNumElements();
       SmallVector<APInt> values;
-      values.reserve(numElems * 4);
+      values.reserve(numElems * nbChunks);
       for (const APInt &origVal : elemsAttr.getValues<APInt>()) {
-        auto [low, midLow, midHigh, high] = getQuarters(origVal, newBitWidth);
-        values.push_back(std::move(low));
-        values.push_back(std::move(midLow));
-        values.push_back(std::move(midHigh));
-        values.push_back(std::move(high));
+        for (uint8_t i = 0; i < nbChunks; i++) {
+          APInt intChunck =
+              origVal.extractBits(acutalBitWidth, i * acutalBitWidth);
+          values.push_back(intChunck);
+        }
       }
 
       auto attr = DenseElementsAttr::get(newType, values);
@@ -427,24 +484,80 @@ struct ConvertArithConstant final
   }
 };
 
-struct ConvertExtUI final : OpConversionPattern<mlir::arith::ExtUIOp> {
+struct ConvertQuartExtUI final : OpConversionPattern<mlir::arith::ExtUIOp> {
   using OpConversionPattern::OpConversionPattern;
+
+  // Since each type inside the program is a tensor with 4 elements, we can
+  // simply return the input tensor as the result. The generated code will later
+  // be removed by the CSE pass.
 
   LogicalResult matchAndRewrite(
       mlir::arith::ExtUIOp op, OpAdaptor adaptor,
       ConversionPatternRewriter &rewriter) const override {
+    ImplicitLocOpBuilder b(op->getLoc(), rewriter);
+
+    auto newResultTy = getTypeConverter()->convertType<RankedTensorType>(
+        op.getResult().getType());
+    auto newInTy =
+        getTypeConverter()->convertType<RankedTensorType>(op.getIn().getType());
+
+    auto resultChunks = newResultTy.getShape().back();
+    auto inChunks = newInTy.getShape().back();
+
+    if (resultChunks > inChunks) {
+      auto paddingFactor = ceil(resultChunks / inChunks);
+
+      auto intAttrLow = rewriter.getIntegerAttr(rewriter.getIndexType(), 0);
+      auto constantLowOp =
+          rewriter.create<mlir::arith::ConstantOp>(op->getLoc(), intAttrLow);
+      SmallVector<Value, 1> lowPadding;
+      lowPadding.push_back(constantLowOp.getResult());
+
+      auto intAttrHigh =
+          rewriter.getIntegerAttr(rewriter.getIndexType(), paddingFactor);
+      auto constantHighOp =
+          rewriter.create<mlir::arith::ConstantOp>(op->getLoc(), intAttrHigh);
+      SmallVector<Value, 1> highPadding;
+      highPadding.push_back(constantHighOp.getResult());
+
+      auto resultVec = b.create<tensor::PadOp>(newResultTy, adaptor.getIn(),
+                                               lowPadding, highPadding);
+
+      llvm::dbgs() << "ExtUI \n";
+      llvm::dbgs() << "resultVec: " << resultVec << "\n";
+
+      rewriter.replaceOp(op, resultVec);
+      return success();
+    }
+  }
+};
+
+struct ConvertQuartExtSI final : OpConversionPattern<mlir::arith::ExtSIOp> {
+  using OpConversionPattern::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(
+      mlir::arith::ExtSIOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
     Location loc = op->getLoc();
 
-    auto newTy =
-        getTypeConverter()->convertType<RankedTensorType>(op.getType());
+    auto newTy = getTypeConverter()->convertType<RankedTensorType>(
+        op.getResult().getType());
 
     if (!newTy)
       return rewriter.notifyMatchFailure(
           loc, llvm::formatv("unsupported type: {0}", op.getType()));
 
-    Value resultVec = constructResultTensor(rewriter, loc, newTy, {op.getIn()});
-    rewriter.replaceOp(op, resultVec);
-    rewriter.replaceOp(op, resultVec);
+    auto resultOp =
+        rewriter.create<mlir::arith::ExtUIOp>(loc, newTy, adaptor.getIn());
+
+    // Value resultVec = constructResultTensor(rewriter, loc, newTy,
+    // {op.getIn()});
+
+    // llvm::dbgs() << "ExtSI \n";
+    // llvm::dbgs() << "newTy: " << newTy << "\n";
+    // llvm::dbgs() << "resultVec: " << resultVec << "\n";
+
+    rewriter.replaceOp(op, resultOp);
     return success();
   }
 };
@@ -459,9 +572,11 @@ struct QuarterWideInt : impl::QuarterWideIntBase<QuarterWideInt> {
     QuarterWideTypeConverter typeConverter(context);
 
     ConversionTarget target(*context);
-    target.addDynamicallyLegalOp<func::FuncOp>([&typeConverter](Operation *op) {
-      return typeConverter.isLegal(cast<func::FuncOp>(op).getFunctionType());
-    });
+    // target.addDynamicallyLegalOp<func::FuncOp>([&typeConverter](Operation
+    // *op) {
+    //   llvm::dbgs() << "Called the legal op \n";
+    //   return typeConverter.isLegal(cast<func::FuncOp>(op).getFunctionType());
+    // });
     auto opLegalCallback = [&typeConverter](Operation *op) {
       return typeConverter.isLegal(op);
     };
@@ -470,10 +585,25 @@ struct QuarterWideInt : impl::QuarterWideIntBase<QuarterWideInt> {
     target.addDynamicallyLegalDialect<mlir::arith::ArithDialect,
                                       tensor::TensorDialect>(opLegalCallback);
 
-    addStructuralConversionPatterns(typeConverter, patterns, target);
+    target.addDynamicallyLegalOp<
+        memref::AllocOp, memref::DeallocOp, memref::StoreOp, memref::LoadOp,
+        memref::SubViewOp, memref::CopyOp, affine::AffineLoadOp,
+        affine::AffineStoreOp, tensor::FromElementsOp, tensor::ExtractOp>(
+        [&](Operation *op) {
+          return typeConverter.isLegal(op->getOperandTypes()) &&
+                 typeConverter.isLegal(op->getResultTypes());
+        });
 
-    patterns.add<ConvertAddI, ConvertMulI, ConvertExtUI, ConvertArithConstant>(
-        typeConverter, context);
+    patterns
+        .add<ConvertAddI, ConvertMulI, ConvertQuartExtUI, ConvertQuartExtSI,
+             ConvertArithConstant, ConvertAny<memref::LoadOp>,
+             ConvertAny<memref::AllocOp>, ConvertAny<memref::DeallocOp>,
+             ConvertAny<memref::StoreOp>, ConvertAny<memref::SubViewOp>,
+             ConvertAny<memref::CopyOp>, ConvertAny<tensor::FromElementsOp>,
+             ConvertAny<tensor::ExtractOp>, ConvertAny<affine::AffineStoreOp>,
+             ConvertAny<affine::AffineLoadOp> >(typeConverter, context);
+
+    addStructuralConversionPatterns(typeConverter, patterns, target);
 
     if (failed(applyPartialConversion(op, target, std::move(patterns))))
       signalPassFailure();
