@@ -1,5 +1,9 @@
 #include "lib/Dialect/Arith/Conversions/ArithToCGGIQuart/ArithToCGGIQuart.h"
 
+#include <mlir/IR/MLIRContext.h>
+
+#include <cstdint>
+
 #include "lib/Dialect/CGGI/IR/CGGIDialect.h"
 #include "lib/Dialect/CGGI/IR/CGGIOps.h"
 #include "lib/Dialect/LWE/IR/LWEOps.h"
@@ -92,6 +96,18 @@ class ArithToCGGIQuartTypeConverter : public TypeConverter {
   }
 };
 
+static Value createTrivialOpMaxWidth(ImplicitLocOpBuilder b, int value) {
+  auto maxWideIntType = IntegerType::get(b.getContext(), maxIntWidth >> 1);
+  auto intAttr = b.getIntegerAttr(maxWideIntType, value);
+
+  auto encoding =
+      lwe::UnspecifiedBitFieldEncodingAttr::get(b.getContext(), maxIntWidth);
+  auto lweType = lwe::LWECiphertextType::get(b.getContext(), encoding,
+                                             lwe::LWEParamsAttr());
+
+  return b.create<cggi::CreateTrivialOp>(lweType, intAttr);
+}
+
 /// Extracts the `input` tensor slice with elements at the last dimension offset
 /// by `lastOffset`. Returns a value of tensor type with the last dimension
 /// reduced to x1 or fully scalarized, e.g.:
@@ -141,7 +157,6 @@ static SmallVector<Value> extractLastDimHalves(
 static Value createScalarOrSplatConstant(OpBuilder &builder, Location loc,
                                          Type type, int64_t value) {
   unsigned elementBitWidth = 0;
-  llvm::dbgs() << "type: " << type << "\n";
   if (auto lweTy = dyn_cast<lwe::LWECiphertextType>(type))
     elementBitWidth =
         cast<lwe::UnspecifiedBitFieldEncodingAttr>(lweTy.getEncoding())
@@ -150,16 +165,6 @@ static Value createScalarOrSplatConstant(OpBuilder &builder, Location loc,
     elementBitWidth = maxIntWidth;
 
   auto apValue = APInt(elementBitWidth, value);
-
-  llvm::dbgs() << "apValue: " << apValue << "\n";
-
-  // TypedAttr attr;
-  // if (isa<IntegerType>(type)) {
-  //   attr = builder.getIntegerAttr(type, apValue);
-  // } else {
-  //   auto vecTy = cast<ShapedType>(type);
-  //   attr = SplatElementsAttr::get(vecTy, apValue);
-  // }
 
   auto maxWideIntType =
       IntegerType::get(builder.getContext(), maxIntWidth >> 1);
@@ -174,24 +179,24 @@ static Value insertLastDimSlice(ConversionPatternRewriter &rewriter,
   ArrayRef<int64_t> shape = cast<RankedTensorType>(dest.getType()).getShape();
   assert(lastOffset < shape.back() && "Offset out of bounds");
 
-  // // Handle scalar source.
-  // if (isa<IntegerType>(source.getType())) {
-  auto intAttr = rewriter.getIntegerAttr(rewriter.getIndexType(), lastOffset);
-  auto constantOp = rewriter.create<mlir::arith::ConstantOp>(loc, intAttr);
-  SmallVector<Value, 1> indices;
-  indices.push_back(constantOp.getResult());
+  // // Handle single element source.
+  if (isa<lwe::LWECiphertextType>(source.getType())) {
+    auto intAttr = rewriter.getIntegerAttr(rewriter.getIndexType(), lastOffset);
+    auto constantOp = rewriter.create<mlir::arith::ConstantOp>(loc, intAttr);
+    SmallVector<Value, 1> indices;
+    indices.push_back(constantOp.getResult());
 
-  return rewriter.create<tensor::InsertOp>(loc, source, dest, indices);
-  // }
+    return rewriter.create<tensor::InsertOp>(loc, source, dest, indices);
+  }
 
-  // SmallVector<OpFoldResult> offsets(shape.size(), rewriter.getIndexAttr(0));
-  // offsets.back() = rewriter.getIndexAttr(lastOffset);
-  // SmallVector<OpFoldResult> sizes(shape.size());
-  // sizes.back() = rewriter.getIndexAttr(1);
-  // SmallVector<OpFoldResult> strides(shape.size(), rewriter.getIndexAttr(1));
+  SmallVector<OpFoldResult> offsets(shape.size(), rewriter.getIndexAttr(0));
+  offsets.back() = rewriter.getIndexAttr(lastOffset);
+  SmallVector<OpFoldResult> sizes(shape.size());
+  sizes.back() = rewriter.getIndexAttr(1);
+  SmallVector<OpFoldResult> strides(shape.size(), rewriter.getIndexAttr(1));
 
-  // return rewriter.create<tensor::InsertSliceOp>(loc, source, dest, offsets,
-  //                                               sizes, strides);
+  return rewriter.create<tensor::InsertSliceOp>(loc, source, dest, offsets,
+                                                sizes, strides);
 }
 
 /// Constructs a new tensor of type `resultType` by creating a series of
@@ -238,22 +243,13 @@ struct ConvertQuartConstantOp
     auto tenShape = newType.getShape();
     auto nbChunks = tenShape.back();
     SmallVector<Value, 1> newTrivialOps;
-    auto encoding = lwe::UnspecifiedBitFieldEncodingAttr::get(op->getContext(),
-                                                              maxIntWidth);
-    auto lweType = lwe::LWECiphertextType::get(op->getContext(), encoding,
-                                               lwe::LWEParamsAttr());
-    auto maxWideIntType = IntegerType::get(op->getContext(), maxIntWidth);
 
     if (auto intAttr = dyn_cast<IntegerAttr>(oldValue)) {
       for (uint8_t i = 0; i < nbChunks; i++) {
         APInt intChunck =
             intAttr.getValue().extractBits(acutalBitWidth, i * acutalBitWidth);
-        auto intAttr =
-            IntegerAttr::get(maxWideIntType, intChunck.getSExtValue());
 
-        llvm::dbgs() << "intChunck{" << i << "}: " << intChunck << "\n";
-
-        auto encrypt = b.create<cggi::CreateTrivialOp>(lweType, intAttr);
+        auto encrypt = createTrivialOpMaxWidth(b, intChunck.getSExtValue());
         newTrivialOps.push_back(encrypt);
       }
 
@@ -263,40 +259,6 @@ struct ConvertQuartConstantOp
 
       return success();
     }
-
-    // if (auto elemsAttr = dyn_cast<DenseElementsAttr>(oldValue)) {
-    //   int64_t numElems = elemsAttr.getNumElements();
-    //   SmallVector<APInt> values;
-    //   values.reserve(numElems * nbChunks);
-    //   for (const APInt &origVal : elemsAttr.getValues<APInt>()) {
-    //     for (uint8_t i = 0; i < nbChunks; i++) {
-    //       APInt intChunck =
-    //           origVal.extractBits(acutalBitWidth, i * acutalBitWidth);
-    //       values.push_back(intChunck);
-    //     }
-    //   }
-
-    //   auto attr = DenseElementsAttr::get(newType, values);
-    //   rewriter.replaceOpWithNewOp<mlir::arith::ConstantOp>(op, attr);
-    //   return success();
-    // }
-
-    // return rewriter.notifyMatchFailure(op.getLoc(),
-    //                                    "unhandled constant attribute");
-
-    // auto intValue =
-    // cast<IntegerAttr>(op.getValue()).getValue().getSExtValue(); auto
-    // inputValue = mlir::IntegerAttr::get(op.getType(), intValue);
-
-    // auto encoding = lwe::UnspecifiedBitFieldEncodingAttr::get(
-    //     op->getContext(), op.getValue().getType().getIntOrFloatBitWidth());
-    // auto lweType = lwe::LWECiphertextType::get(op->getContext(), encoding,
-    //                                            lwe::LWEParamsAttr());
-
-    // auto encrypt = b.create<cggi::CreateTrivialOp>(lweType, inputValue);
-
-    // rewriter.replaceOp(op, encrypt);
-    // return success();
   }
 };
 
@@ -321,42 +283,39 @@ struct ConvertQuartConstantOp
 //   }
 // };
 
-struct ConvertQuartExtUI final : OpConversionPattern<mlir::arith::ExtUIOp> {
-  using OpConversionPattern::OpConversionPattern;
+template <typename ArithExtOp>
+struct ConvertQuartExt final : OpConversionPattern<ArithExtOp> {
+  using OpConversionPattern<ArithExtOp>::OpConversionPattern;
 
   // Since each type inside the program is a tensor with 4 elements, we can
   // simply return the input tensor as the result. The generated code will later
   // be removed by the CSE pass.
 
   LogicalResult matchAndRewrite(
-      mlir::arith::ExtUIOp op, OpAdaptor adaptor,
+      ArithExtOp op, typename ArithExtOp::Adaptor adaptor,
       ConversionPatternRewriter &rewriter) const override {
     ImplicitLocOpBuilder b(op->getLoc(), rewriter);
 
-    auto newResultTy = getTypeConverter()->convertType<RankedTensorType>(
-        op.getResult().getType());
-    auto newInTy =
-        getTypeConverter()->convertType<RankedTensorType>(op.getIn().getType());
+    auto newResultTy = cast<ShapedType>(
+        convertArithToCGGIQuartType(cast<IntegerType>(op.getResult().getType()),
+                                    op.getContext())
+            .value());
+    auto newInTy = cast<ShapedType>(
+        convertArithToCGGIQuartType(cast<IntegerType>(op.getIn().getType()),
+                                    op.getContext())
+            .value());
 
     auto resultChunks = newResultTy.getShape().back();
     auto inChunks = newInTy.getShape().back();
 
     if (resultChunks > inChunks) {
-      auto paddingFactor = ceil(resultChunks / inChunks);
+      auto paddingFactor = resultChunks - inChunks;
 
       SmallVector<OpFoldResult, 1> low, high;
       low.push_back(rewriter.getIndexAttr(0));
       high.push_back(rewriter.getIndexAttr(paddingFactor));
 
-      auto maxWideIntType = IntegerType::get(b.getContext(), maxIntWidth >> 1);
-      auto intAttr = b.getIntegerAttr(maxWideIntType, 0);
-
-      auto encoding = lwe::UnspecifiedBitFieldEncodingAttr::get(
-          op->getContext(), maxIntWidth);
-      auto lweType = lwe::LWECiphertextType::get(op->getContext(), encoding,
-                                                 lwe::LWEParamsAttr());
-
-      auto padValue = b.create<cggi::CreateTrivialOp>(lweType, intAttr);
+      auto padValue = createTrivialOpMaxWidth(b, 0);
 
       auto resultVec = b.create<tensor::PadOp>(newResultTy, adaptor.getIn(),
                                                low, high, padValue,
@@ -505,40 +464,6 @@ struct ConvertQuartAddI final : OpConversionPattern<mlir::arith::AddIOp> {
     Value resultVec = constructResultTensor(rewriter, loc, newTy, outputs);
     rewriter.replaceOp(op, resultVec);
     return success();
-
-    // auto lowSum0 = b.create<mlir::arith::AddIOp>(lhsElem0, rhsElem0);
-    // auto lowSum1 = b.create<mlir::arith::AddIOp>(lhsElem1, rhsElem1);
-    // auto lowSum2 = b.create<mlir::arith::AddIOp>(lhsElem2, rhsElem2);
-    // auto lowSum3 = b.create<mlir::arith::AddIOp>(lhsElem3, rhsElem3);
-
-    // auto output0Lsb = b.create<mlir::arith::TruncIOp>(realTy, lowSum0);
-    // auto output0LsbHigh = b.create<mlir::arith::ExtUIOp>(elemTy, output0Lsb);
-
-    // auto output1Lsb = b.create<mlir::arith::TruncIOp>(realTy, lowSum1);
-    // auto output1LsbHigh = b.create<mlir::arith::ExtUIOp>(elemTy, output1Lsb);
-
-    // auto output2Lsb = b.create<mlir::arith::TruncIOp>(realTy, lowSum2);
-    // auto output2LsbHigh = b.create<mlir::arith::ExtUIOp>(elemTy, output2Lsb);
-
-    // auto output3Lsb = b.create<mlir::arith::TruncIOp>(realTy, lowSum3);
-    // auto output3LsbHigh = b.create<mlir::arith::ExtUIOp>(elemTy, output3Lsb);
-
-    // // Now all the outputs are 16b elements, wants presentation of 4x8b
-    // auto carry0 =
-    //     b.create<mlir::arith::ShRUIOp>(lowSum0, constantOp.getResult());
-    // auto carry1 =
-    //     b.create<mlir::arith::ShRUIOp>(lowSum1, constantOp.getResult());
-    // auto carry2 =
-    //     b.create<mlir::arith::ShRUIOp>(lowSum2, constantOp.getResult());
-
-    // auto high1 = b.create<mlir::arith::AddIOp>(output1LsbHigh, carry0);
-    // auto high2 = b.create<mlir::arith::AddIOp>(output2LsbHigh, carry1);
-    // auto high3 = b.create<mlir::arith::AddIOp>(output3LsbHigh, carry2);
-
-    // Value resultVec = constructResultTensor(
-    //     rewriter, loc, newTy, ou);
-    // rewriter.replaceOp(op, resultVec);
-    // return success();
   }
 };
 
@@ -581,7 +506,10 @@ struct ArithToCGGIQuart : public impl::ArithToCGGIQuartBase<ArithToCGGIQuart> {
         });
 
     patterns.add<
-        ConvertQuartConstantOp, ConvertQuartExtUI, ConvertQuartAddI,
+        ConvertQuartConstantOp,
+        // ConvertQuartExt<mlir::arith::ExtUIOp>,
+        // ConvertQuartExt<mlir::arith::ExtSIOp>,
+        ConvertQuartAddI,
         // ConvertTruncIOp, ConvertExtUIOp,
         // ConvertShRUIOp,
         // ConvertExtSIOp,
