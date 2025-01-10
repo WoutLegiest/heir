@@ -20,6 +20,9 @@ namespace mlir::heir::arith {
 
 static constexpr unsigned maxIntWidth = 16;
 
+// ToDo: General funcntion: build trivial Op
+// Get maxIntWidth Type
+
 static lwe::LWECiphertextType convertArithToCGGIType(IntegerType type,
                                                      MLIRContext *ctx) {
   return lwe::LWECiphertextType::get(ctx,
@@ -36,8 +39,6 @@ static std::optional<Type> convertArithToCGGIQuartType(IntegerType type,
 
   float width = type.getWidth();
   float realWidth = maxIntWidth >> 1;
-
-  // if (width < maxIntWidth) return lweType;
 
   uint8_t nbChunks = ceil(width / realWidth);
 
@@ -223,8 +224,6 @@ struct ConvertQuartConstantOp
     if (isa<IndexType>(op.getValue().getType())) {
       return failure();
     }
-
-    llvm::dbgs() << "#########################\n";
     ImplicitLocOpBuilder b(op.getLoc(), rewriter);
 
     Type oldType = op.getType();
@@ -239,14 +238,6 @@ struct ConvertQuartConstantOp
     auto tenShape = newType.getShape();
     auto nbChunks = tenShape.back();
     SmallVector<Value, 1> newTrivialOps;
-
-    llvm::dbgs() << "#########################\n";
-    llvm::dbgs() << "nbChunks: " << nbChunks << "\n";
-    llvm::dbgs() << "newBitWidth: " << maxIntWidth << "\n";
-    llvm::dbgs() << "acutalBitWidth: " << acutalBitWidth << "\n";
-    llvm::dbgs() << "oldType: " << oldType << "\n";
-    llvm::dbgs() << "newType: " << newType << "\n";
-
     auto encoding = lwe::UnspecifiedBitFieldEncodingAttr::get(op->getContext(),
                                                               maxIntWidth);
     auto lweType = lwe::LWECiphertextType::get(op->getContext(), encoding,
@@ -353,28 +344,31 @@ struct ConvertQuartExtUI final : OpConversionPattern<mlir::arith::ExtUIOp> {
     if (resultChunks > inChunks) {
       auto paddingFactor = ceil(resultChunks / inChunks);
 
-      auto intAttrLow = rewriter.getIntegerAttr(rewriter.getIndexType(), 0);
-      auto constantLowOp =
-          rewriter.create<mlir::arith::ConstantOp>(op->getLoc(), intAttrLow);
-      SmallVector<Value, 1> lowPadding;
-      lowPadding.push_back(constantLowOp.getResult());
+      SmallVector<OpFoldResult, 1> low, high;
+      low.push_back(rewriter.getIndexAttr(0));
+      high.push_back(rewriter.getIndexAttr(paddingFactor));
 
-      auto intAttrHigh =
-          rewriter.getIntegerAttr(rewriter.getIndexType(), paddingFactor);
-      auto constantHighOp =
-          rewriter.create<mlir::arith::ConstantOp>(op->getLoc(), intAttrHigh);
-      SmallVector<Value, 1> highPadding;
-      highPadding.push_back(constantHighOp.getResult());
+      auto maxWideIntType = IntegerType::get(b.getContext(), maxIntWidth >> 1);
+      auto intAttr = b.getIntegerAttr(maxWideIntType, 0);
+
+      auto encoding = lwe::UnspecifiedBitFieldEncodingAttr::get(
+          op->getContext(), maxIntWidth);
+      auto lweType = lwe::LWECiphertextType::get(op->getContext(), encoding,
+                                                 lwe::LWEParamsAttr());
+
+      auto padValue = b.create<cggi::CreateTrivialOp>(lweType, intAttr);
 
       auto resultVec = b.create<tensor::PadOp>(newResultTy, adaptor.getIn(),
-                                               lowPadding, highPadding);
-
-      llvm::dbgs() << "ExtUI \n";
-      llvm::dbgs() << "resultVec: " << resultVec << "\n";
+                                               low, high, padValue,
+                                               /*nofold=*/true);
 
       rewriter.replaceOp(op, resultVec);
       return success();
     }
+
+    // OTHER CASE: Going down -> Rescale
+
+    // auto outType = convertArithToCGGIQuartType(
   }
 };
 
