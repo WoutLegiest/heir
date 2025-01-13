@@ -387,14 +387,14 @@ struct ConvertSubOp : public OpConversionPattern<cggi::SubOp> {
   }
 };
 
-struct ConvertShROp : public OpConversionPattern<cggi::ShiftRightOp> {
+struct ConvertShROp : public OpConversionPattern<cggi::ScalarShiftRightOp> {
   ConvertShROp(mlir::MLIRContext *context)
-      : OpConversionPattern<cggi::ShiftRightOp>(context) {}
+      : OpConversionPattern<cggi::ScalarShiftRightOp>(context) {}
 
   using OpConversionPattern::OpConversionPattern;
 
   LogicalResult matchAndRewrite(
-      cggi::ShiftRightOp op, OpAdaptor adaptor,
+      cggi::ScalarShiftRightOp op, OpAdaptor adaptor,
       ConversionPatternRewriter &rewriter) const override {
     ImplicitLocOpBuilder b(op.getLoc(), rewriter);
     FailureOr<Value> result = getContextualServerKey(op);

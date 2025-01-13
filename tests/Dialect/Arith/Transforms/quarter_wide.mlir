@@ -1,6 +1,6 @@
-// RUN: heir-opt --arith-quarter-wide-int  %s | FileCheck %s
+// heir-opt --arith-quarter-wide-int  %s | FileCheck %s
 
-// CHECK-LABEL: func @test_simple_split
+// CHCK-LABEL: func @test_simple_split
 // CHCK-COUNT-9: arith.muli
 // CHCK-COUNT-7: arith.addi
 // CHCK-COUNT-3: arith.shrui

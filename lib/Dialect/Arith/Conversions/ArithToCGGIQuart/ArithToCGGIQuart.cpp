@@ -378,7 +378,8 @@ struct ConvertQuartAddI final : OpConversionPattern<mlir::arith::AddIOp> {
 
       // Now all the outputs are 16b elements, wants presentation of 4x8b
       if (i != splitLhs.size() - 1) {
-        auto carry = b.create<cggi::ShiftRightOp>(elemType, lowSum, shiftAttr);
+        auto carry =
+            b.create<cggi::ScalarShiftRightOp>(elemType, lowSum, shiftAttr);
         carries.push_back(carry);
       }
 

@@ -515,14 +515,16 @@ LogicalResult TfheRustEmitter::printOperation(affine::AffineForOp forOp) {
 
 LogicalResult TfheRustEmitter::printOperation(ScalarLeftShiftOp op) {
   emitAssignPrefix(op.getResult());
-  os << variableNames->getNameForValue(op.getServerKey()) << "." << op << "(";
+  os << variableNames->getNameForValue(op.getServerKey())
+     << ".scalar_left_shift(";
 
   auto valueStr = variableNames->getNameForValue(op.getCiphertext());
   std::string prefix =
       op.getCiphertext().getType().hasTrait<PassByReference>() ? "&" : "";
   auto cipherString = prefix + valueStr;
 
-  os << cipherString << ", " << op.getShiftAmount() << ");\n";
+  os << cipherString << ", " << op.getShiftAmount() << " as u8);\n";
+  return success();
 }
 
 LogicalResult TfheRustEmitter::printOperation(CreateTrivialOp op) {

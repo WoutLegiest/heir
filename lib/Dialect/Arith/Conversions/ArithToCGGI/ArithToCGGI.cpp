@@ -159,11 +159,9 @@ struct ConvertShRUIOp : public OpConversionPattern<mlir::arith::ShRUIOp> {
 
       auto inputValue =
           mlir::IntegerAttr::get(rewriter.getIndexType(), (int8_t)shiftAmount);
-      auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
-          op.getLoc(), rewriter.getIndexType(), inputValue);
 
-      auto shiftOp = b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(),
-                                                  inputValue);
+      auto shiftOp = b.create<cggi::ScalarShiftRightOp>(
+          outputType, adaptor.getLhs(), inputValue);
       rewriter.replaceOp(op, shiftOp);
 
       return success();
@@ -178,13 +176,10 @@ struct ConvertShRUIOp : public OpConversionPattern<mlir::arith::ShRUIOp> {
 
     auto inputValue =
         mlir::IntegerAttr::get(rewriter.getIndexType(), shiftAmount);
-    auto cteOp = rewriter.create<mlir::arith::ConstantOp>(
-        op.getLoc(), rewriter.getIndexType(), inputValue);
 
-    auto shiftOp =
-        b.create<cggi::ShiftRightOp>(outputType, adaptor.getLhs(), inputValue);
+    auto shiftOp = b.create<cggi::ScalarShiftRightOp>(
+        outputType, adaptor.getLhs(), inputValue);
     rewriter.replaceOp(op, shiftOp);
-    rewriter.replaceOp(op.getLhs().getDefiningOp(), cteOp);
 
     return success();
   }
