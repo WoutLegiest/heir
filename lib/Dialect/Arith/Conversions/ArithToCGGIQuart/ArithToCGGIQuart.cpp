@@ -204,7 +204,6 @@ static Value constructResultTensor(ConversionPatternRewriter &rewriter,
                                    Location loc, RankedTensorType resultType,
                                    ValueRange resultComponents) {
   Value resultVec = createScalarOrSplatConstant(rewriter, loc, resultType, 0);
-  llvm::dbgs() << "resultVec: " << resultVec << "\n";
   for (auto [i, component] : llvm::enumerate(resultComponents))
     resultVec = insertLastDimSlice(rewriter, loc, component, resultVec, i);
 
@@ -257,8 +256,9 @@ struct ConvertQuartConstantOp
   }
 };
 
-struct ConvertTruncIOp : public OpConversionPattern<mlir::arith::TruncIOp> {
-  ConvertTruncIOp(mlir::MLIRContext *context)
+struct ConvertQuartTruncIOp
+    : public OpConversionPattern<mlir::arith::TruncIOp> {
+  ConvertQuartTruncIOp(mlir::MLIRContext *context)
       : OpConversionPattern<mlir::arith::TruncIOp>(context) {}
 
   using OpConversionPattern::OpConversionPattern;
@@ -397,6 +397,103 @@ struct ConvertQuartAddI final : OpConversionPattern<mlir::arith::AddIOp> {
   }
 };
 
+// Implemented using the Karatsuba algorithm
+// https://en.wikipedia.org/wiki/Karatsuba_algorithm#Algorithm
+struct ConvertQuartMulI final : OpConversionPattern<mlir::arith::MulIOp> {
+  using OpConversionPattern::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(
+      mlir::arith::MulIOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter &rewriter) const override {
+    Location loc = op->getLoc();
+    ImplicitLocOpBuilder b(loc, rewriter);
+
+    auto newTy =
+        getTypeConverter()->convertType<RankedTensorType>(op.getType());
+    if (!newTy)
+      return rewriter.notifyMatchFailure(
+          loc, llvm::formatv("unsupported type: {0}", op.getType()));
+    if (newTy.getShape().back() != 4)
+      return rewriter.notifyMatchFailure(
+          loc, llvm::formatv("Mul only support 4 split elements. Shape: {0}",
+                             newTy));
+
+    auto elemTy = convertArithToCGGIType(
+        IntegerType::get(op->getContext(), maxIntWidth), op->getContext());
+    auto realTy = convertArithToCGGIType(
+        IntegerType::get(op->getContext(), maxIntWidth >> 1), op->getContext());
+
+    // Create Constant
+    auto shiftAttr =
+        rewriter.getIntegerAttr(b.getIndexType(), maxIntWidth >> 1);
+
+    SmallVector<Value> splitLhs =
+        extractLastDimHalves(rewriter, loc, adaptor.getLhs());
+    SmallVector<Value> splitRhs =
+        extractLastDimHalves(rewriter, loc, adaptor.getRhs());
+
+    // TODO: Implement the real Karatsuba algorithm for 4x4 multiplication.
+    // First part of Karatsuba algorithm
+    auto z00 = b.create<cggi::MulOp>(splitLhs[0], splitRhs[0]);
+    auto z02 = b.create<cggi::MulOp>(splitLhs[1], splitRhs[1]);
+    auto z01_p1 = b.create<cggi::AddOp>(splitLhs[0], splitLhs[1]);
+    auto z01_p2 = b.create<cggi::AddOp>(splitRhs[0], splitRhs[1]);
+    auto z01_m = b.create<cggi::MulOp>(z01_p1, z01_p2);
+    auto z01_s = b.create<cggi::SubOp>(z01_m, z00);
+    auto z01 = b.create<cggi::SubOp>(z01_s, z02);
+
+    // Second part I of Karatsuba algorithm
+    auto z1a0 = b.create<cggi::MulOp>(splitLhs[0], splitRhs[2]);
+    auto z1a2 = b.create<cggi::MulOp>(splitLhs[1], splitRhs[3]);
+    auto z1a1_p1 = b.create<cggi::AddOp>(splitLhs[0], splitLhs[1]);
+    auto z1a1_p2 = b.create<cggi::AddOp>(splitRhs[2], splitRhs[3]);
+    auto z1a1_m = b.create<cggi::MulOp>(z1a1_p1, z1a1_p2);
+    auto z1a1_s = b.create<cggi::SubOp>(z1a1_m, z1a0);
+    auto z1a1 = b.create<cggi::SubOp>(z1a1_s, z1a2);
+
+    // Second part II of Karatsuba algorithm
+    auto z1b0 = b.create<cggi::MulOp>(splitLhs[2], splitRhs[0]);
+    auto z1b2 = b.create<cggi::MulOp>(splitLhs[3], splitRhs[1]);
+    auto z1b1_p1 = b.create<cggi::AddOp>(splitLhs[2], splitLhs[3]);
+    auto z1b1_p2 = b.create<cggi::AddOp>(splitRhs[0], splitRhs[1]);
+    auto z1b1_m = b.create<cggi::MulOp>(z1b1_p1, z1b1_p2);
+    auto z1b1_s = b.create<cggi::SubOp>(z1b1_m, z1b0);
+    auto z1b1 = b.create<cggi::SubOp>(z1b1_s, z1b2);
+
+    auto out2Kara = b.create<cggi::AddOp>(z1a0, z1b0);
+    auto out2Carry = b.create<cggi::AddOp>(out2Kara, z02);
+    auto out3Carry = b.create<cggi::AddOp>(z1a1, z1b1);
+
+    // Output are now all 16b elements, wants presentation of 4x8b
+    auto output0Lsb = b.create<cggi::CastOp>(realTy, z00);
+    auto output0LsbHigh = b.create<cggi::CastOp>(elemTy, output0Lsb);
+    auto output0Msb =
+        b.create<cggi::ScalarShiftRightOp>(elemTy, z00, shiftAttr);
+
+    auto output1Lsb = b.create<cggi::CastOp>(realTy, z01);
+    auto output1LsbHigh = b.create<cggi::CastOp>(elemTy, output1Lsb);
+    auto output1Msb =
+        b.create<cggi::ScalarShiftRightOp>(elemTy, z01, shiftAttr);
+
+    auto output2Lsb = b.create<cggi::CastOp>(realTy, out2Carry);
+    auto output2LsbHigh = b.create<cggi::CastOp>(elemTy, output2Lsb);
+    auto output2Msb =
+        b.create<cggi::ScalarShiftRightOp>(elemTy, out2Carry, shiftAttr);
+
+    auto output3Lsb = b.create<cggi::CastOp>(realTy, out3Carry);
+    auto output3LsbHigh = b.create<cggi::CastOp>(elemTy, output3Lsb);
+
+    auto output1 = b.create<cggi::AddOp>(output1LsbHigh, output0Msb);
+    auto output2 = b.create<cggi::AddOp>(output2LsbHigh, output1Msb);
+    auto output3 = b.create<cggi::AddOp>(output3LsbHigh, output2Msb);
+
+    Value resultVec = constructResultTensor(
+        rewriter, loc, newTy, {output0LsbHigh, output1, output2, output3});
+    rewriter.replaceOp(op, resultVec);
+    return success();
+  }
+};
+
 struct ArithToCGGIQuart : public impl::ArithToCGGIQuartBase<ArithToCGGIQuart> {
   void runOnOperation() override {
     MLIRContext *context = &getContext();
@@ -434,7 +531,7 @@ struct ArithToCGGIQuart : public impl::ArithToCGGIQuartBase<ArithToCGGIQuart> {
     patterns
         .add<ConvertQuartConstantOp, ConvertQuartExt<mlir::arith::ExtUIOp>,
              ConvertQuartExt<mlir::arith::ExtSIOp>, ConvertQuartAddI,
-             ConvertTruncIOp, ConvertAny<memref::LoadOp>,
+             ConvertQuartMulI, ConvertQuartTruncIOp, ConvertAny<memref::LoadOp>,
              ConvertAny<memref::AllocOp>, ConvertAny<memref::DeallocOp>,
              ConvertAny<memref::StoreOp>, ConvertAny<memref::SubViewOp>,
              ConvertAny<memref::CopyOp>, ConvertAny<tensor::FromElementsOp>,

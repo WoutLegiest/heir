@@ -19,11 +19,9 @@
 // }
 
 
-func.func @test_simple_split2(%arg0: i32) -> i32 {
+func.func @test_simple_split2(%arg0: i32, %arg1: i32) -> i32 {
   %2 = arith.constant 31 : i32
   %7 = arith.addi %arg0, %2 : i32
-//     %1 = arith.trunci %7: i32 to i16
-//   %5 = arith.addi %arg1, %1 : i16
-
+  %8 = arith.muli %7, %arg1 : i32
   return %7 : i32
 }
