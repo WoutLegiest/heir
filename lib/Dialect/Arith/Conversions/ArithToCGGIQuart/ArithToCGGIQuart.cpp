@@ -151,19 +151,16 @@ static SmallVector<Value> extractLastDimHalves(
 
 static Value createScalarOrSplatConstant(OpBuilder &builder, Location loc,
                                          Type type, int64_t value) {
-  unsigned elementBitWidth = 0;
-  if (auto lweTy = dyn_cast<lwe::LWECiphertextType>(type))
-    elementBitWidth =
-        cast<lwe::UnspecifiedBitFieldEncodingAttr>(lweTy.getEncoding())
-            .getCleartextBitwidth();
-  else
-    elementBitWidth = maxIntWidth;
+  // unsigned elementBitWidth = 0;
+  // if (auto lweTy = dyn_cast<lwe::LWECiphertextType>(type))
+  //   elementBitWidth =
+  //       cast<lwe::UnspecifiedBitFieldEncodingAttr>(lweTy.getEncoding())
+  //           .getCleartextBitwidth();
+  // else
+  //   elementBitWidth = maxIntWidth;
 
-  auto apValue = APInt(elementBitWidth, value);
-
-  auto maxWideIntType =
-      IntegerType::get(builder.getContext(), maxIntWidth >> 1);
-  auto intAttr = builder.getIntegerAttr(maxWideIntType, value);
+  auto intAttr = builder.getIntegerAttr(
+      IntegerType::get(builder.getContext(), maxIntWidth), value);
 
   return builder.create<cggi::CreateTrivialOp>(loc, type, intAttr);
 }

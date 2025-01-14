@@ -520,9 +520,16 @@ struct ConvertTrivialOp : public OpConversionPattern<cggi::CreateTrivialOp> {
     auto constantWidth = op.getValue().getValue().getBitWidth();
 
     auto cteOp = rewriter.create<arith::ConstantOp>(
-        op.getLoc(), rewriter.getIntegerType(constantWidth), inputValue);
+        op.getLoc(), op.getValue().getType(), inputValue);
 
     auto outputType = encrytpedUIntTypeFromWidth(getContext(), constantWidth);
+
+    if (isa<RankedTensorType>(op.getResult().getType())) {
+      auto elemOutputType =
+          encrytpedUIntTypeFromWidth(getContext(), constantWidth);
+      auto shape = cast<RankedTensorType>(op.getResult().getType()).getShape();
+      outputType = RankedTensorType::get(shape, elemOutputType);
+    }
 
     auto createTrivialOp = rewriter.create<tfhe_rust::CreateTrivialOp>(
         op.getLoc(), outputType, serverKey, cteOp);
@@ -585,11 +592,11 @@ class CGGIToTfheRust : public impl::CGGIToTfheRustBase<CGGIToTfheRust> {
     target.addDynamicallyLegalOp<
         memref::AllocOp, memref::DeallocOp, memref::StoreOp, memref::LoadOp,
         memref::SubViewOp, memref::CopyOp, affine::AffineLoadOp,
-        affine::AffineStoreOp, tensor::FromElementsOp, tensor::ExtractOp>(
-        [&](Operation *op) {
-          return typeConverter.isLegal(op->getOperandTypes()) &&
-                 typeConverter.isLegal(op->getResultTypes());
-        });
+        tensor::InsertOp, tensor::InsertSliceOp, affine::AffineStoreOp,
+        tensor::FromElementsOp, tensor::ExtractOp>([&](Operation *op) {
+      return typeConverter.isLegal(op->getOperandTypes()) &&
+             typeConverter.isLegal(op->getResultTypes());
+    });
 
     // FIXME: still need to update callers to insert the new server key arg, if
     // needed and possible.
@@ -601,6 +608,7 @@ class CGGIToTfheRust : public impl::CGGIToTfheRustBase<CGGIToTfheRust> {
         ConvertAny<memref::AllocOp>, ConvertAny<memref::DeallocOp>,
         ConvertAny<memref::StoreOp>, ConvertAny<memref::LoadOp>,
         ConvertAny<memref::SubViewOp>, ConvertAny<memref::CopyOp>,
+        ConvertAny<tensor::InsertOp>, ConvertAny<tensor::InsertSliceOp>,
         ConvertAny<tensor::FromElementsOp>, ConvertAny<tensor::ExtractOp>,
         ConvertAny<affine::AffineLoadOp>, ConvertAny<affine::AffineStoreOp>>(
         typeConverter, context);

@@ -24,15 +24,15 @@ class TfheRust_BinaryOp<string mnemonic>
 ]> {
   let arguments = (ins
     TfheRust_ServerKey:$serverKey,
-    TfheRust_CiphertextType:$lhs,
-    TfheRust_CiphertextType:$rhs
+    TfheRust_CiphertextLikeType:$lhs,
+    TfheRust_CiphertextLikeType:$rhs
   );
-  let results = (outs TfheRust_CiphertextType:$output);
+  let results = (outs TfheRust_CiphertextLikeType:$output);
 }
 
 def TfheRust_CreateTrivialOp : TfheRust_Op<"create_trivial", [Pure]> {
   let arguments = (ins TfheRust_ServerKey:$serverKey, AnyInteger:$value);
-  let results = (outs TfheRust_CiphertextType:$output);
+  let results = (outs TfheRust_CiphertextLikeType:$output);
   let hasCanonicalizer = 1;
 }
 
