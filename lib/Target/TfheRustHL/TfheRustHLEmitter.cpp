@@ -64,6 +64,56 @@ FailureOr<int> getRustIntegerType(int width) {
   return failure();
 }
 
+FailureOr<DenseElementsAttr> getConstantGlobalData(memref::GetGlobalOp op) {
+  auto module = op->getParentOfType<mlir::ModuleOp>();
+  auto globalOp =
+      dyn_cast<mlir::memref::GlobalOp>(module.lookupSymbol(op.getName()));
+  if (!globalOp) {
+    return failure();
+  }
+  auto cstAttr =
+      dyn_cast_or_null<DenseElementsAttr>(globalOp.getConstantInitValue());
+  if (!cstAttr) {
+    return failure();
+  }
+  return cstAttr;
+}
+
+// Bring this function to the Utils.h/cpp ?
+// Function to check if an operation is allowed to remain in the Arith dialect
+static bool allowedRemainArith(Operation *op) {
+  return llvm::TypeSwitch<Operation *, bool>(op)
+      .Case<mlir::arith::ConstantOp>([](auto op) {
+        // This lambda will be called for any of the matched operation types
+        return true;
+      })
+      // Allow memref LoadOp if it comes from a FuncArg or if it comes from
+      // an allowed alloc memref
+      // Other cases: Memref comes from function -> need to convert to LWE
+      .Case<memref::LoadOp>([](memref::LoadOp memrefLoad) {
+        return memrefLoad.getMemRef().getDefiningOp() != nullptr;
+      })
+      .Case<mlir::arith::ExtUIOp, mlir::arith::ExtSIOp, mlir::arith::TruncIOp>(
+          [](auto op) {
+            // This lambda will be called for any of the matched operation types
+            if (auto *defOp = op.getIn().getDefiningOp()) {
+              return allowedRemainArith(defOp);
+            }
+            return false;
+          })
+      .Case<tfhe_rust::CastOp>([](auto op) {
+        // This lambda will be called for any of the matched operation types
+        if (auto *defOp = op.getCiphertext().getDefiningOp()) {
+          return allowedRemainArith(defOp);
+        }
+        return false;
+      })
+      .Default([](Operation *) {
+        // Default case for operations that don't match any of the types
+        return false;
+      });
+}
+
 }  // namespace
 
 // Global Variable
@@ -84,8 +134,18 @@ void registerToTfheRustHLTranslation() {
 }
 
 LogicalResult translateToTfheRustHL(Operation *op, llvm::raw_ostream &os) {
+  // find usage of parallellism
+  bool parallelism = false;
+  op->walk<WalkOrder::PreOrder>([&](Operation *op) {
+    if (isa<affine::AffineParallelOp>(op)) {
+      parallelism = true;
+      return WalkResult::interrupt();
+    }
+    return WalkResult::advance();
+  });
+
   SelectVariableNames variableNames(op);
-  TfheRustHLEmitter emitter(os, &variableNames);
+  TfheRustHLEmitter emitter(os, &variableNames, parallelism);
   LogicalResult result = emitter.translate(*op);
   return result;
 }
@@ -99,22 +159,29 @@ LogicalResult TfheRustHLEmitter::translate(Operation &op) {
           .Case<func::FuncOp, func::CallOp, func::ReturnOp>(
               [&](auto op) { return printOperation(op); })
           // Affine ops
-          .Case<affine::AffineForOp, affine::AffineYieldOp,
-                affine::AffineLoadOp, affine::AffineStoreOp>(
+          .Case<affine::AffineForOp, affine::AffineParallelOp,
+                affine::AffineYieldOp, affine::AffineLoadOp,
+                affine::AffineStoreOp>(
               [&](auto op) { return printOperation(op); })
           // Arith ops
           .Case<arith::ConstantOp, arith::IndexCastOp, arith::ShRSIOp,
-                arith::ShLIOp, arith::TruncIOp, arith::AndIOp>(
+                arith::ExtSIOp, arith::ShLIOp, arith::TruncIOp, arith::AndIOp>(
               [&](auto op) { return printOperation(op); })
           // MemRef ops
-          .Case<memref::AllocOp, memref::DeallocOp, memref::LoadOp,
-                memref::StoreOp>([&](auto op) { return printOperation(op); })
+          .Case<memref::AllocOp, memref::GetGlobalOp, memref::LoadOp,
+                memref::DeallocOp, memref::StoreOp>(
+              [&](auto op) { return printOperation(op); })
           // TfheRust ops
           .Case<AddOp, SubOp, MulOp, ScalarRightShiftOp, CastOp,
                 CreateTrivialOp>([&](auto op) { return printOperation(op); })
           // Tensor ops
           .Case<tensor::ExtractOp, tensor::FromElementsOp, tensor::InsertOp>(
               [&](auto op) { return printOperation(op); })
+          // MemRef ops
+          .Case<memref::GlobalOp, memref::DeallocOp>([&](auto op) {
+            // These are no-ops.
+            return success();
+          })
           .Default([&](Operation &) {
             return op.emitOpError("unable to find printer for op");
           });
@@ -128,6 +195,10 @@ LogicalResult TfheRustHLEmitter::translate(Operation &op) {
 
 LogicalResult TfheRustHLEmitter::printOperation(ModuleOp moduleOp) {
   os << kModulePrelude << "\n";
+
+  if (parallelism) {
+    os << kModulePreludeParallel << "\n";
+  }
 
   // Find default type of the module and use a Type alias
   moduleOp.getOperation()->walk([&](Operation *op) {
@@ -217,16 +288,19 @@ LogicalResult TfheRustHLEmitter::printOperation(func::ReturnOp op) {
     if (isa<BlockArgument>(value)) {
       // Function arguments used as outputs must be cloned.
       return variableNames->getNameForValue(value) + ".clone()";
-    } else if (MemRefType memRefType = dyn_cast<MemRefType>(value.getType())) {
+    }
+    if (MemRefType memRefType = dyn_cast<MemRefType>(value.getType())) {
       auto shape = memRefType.getShape();
       // Internally allocated memrefs that are treated as hashmaps must be
       // converted to arrays.
       unsigned int i = 0;
+      const auto *parallelPrefix = parallelism ? ".lock().unwrap()" : "";
       std::string res =
-          variableNames->getNameForValue(value) + std::string(".get(&(") +
+          variableNames->getNameForValue(value) + parallelPrefix +
+          std::string(".get(&(") +
           std::accumulate(std::next(shape.begin()), shape.end(),
                           std::string("i0"),
-                          [&](std::string a, int64_t value) {
+                          [&](const std::string &a, int64_t value) {
                             return a + ", i" + std::to_string(++i);
                           }) +
           std::string(")).unwrap().clone()");
@@ -273,6 +347,46 @@ LogicalResult TfheRustHLEmitter::printOperation(func::CallOp op) {
 
 void TfheRustHLEmitter::emitAssignPrefix(Value result) {
   os << "let " << variableNames->getNameForValue(result) << " = ";
+}
+
+LogicalResult TfheRustHLEmitter::printOperation(memref::GetGlobalOp op) {
+  MemRefType memRefType = dyn_cast<MemRefType>(op.getResult().getType());
+  if (!memRefType) {
+    return op.emitOpError()
+           << "Expected global to be a memref " << op.getName();
+  }
+  auto cstAttr = getConstantGlobalData(op);
+  if (failed(cstAttr)) {
+    return op.emitOpError() << "Failed to get constant global data";
+  }
+
+  auto type = convertType(memRefType.getElementType());
+  if (failed(type)) {
+    return op.emitOpError()
+           << "Failed to emit type for global " << op.getResult().getType();
+  }
+
+  // Globals are emitted as 1-D arrays.
+  os << "static " << variableNames->getNameForValue(op.getResult())
+     << llvm::formatv(" : [{0}; {1}]", type, memRefType.getNumElements())
+     << " = [";
+
+  // Populate data by iterating through constant data attribute
+  auto printValue = [](const APInt &value) -> std::string {
+    llvm::SmallString<40> s;
+    value.toStringSigned(s, 10);
+    return std::string(s);
+  };
+
+  auto cstIter = cstAttr.value().value_begin<APInt>();
+  auto cstIterEnd = cstAttr.value().value_end<APInt>();
+  os << std::accumulate(std::next(cstIter), cstIterEnd, printValue(*cstIter),
+                        [&](const std::string &a, const APInt &value) {
+                          return a + ", " + printValue(value);
+                        });
+
+  os << "];\n";
+  return success();
 }
 
 LogicalResult TfheRustHLEmitter::printMethod(
@@ -342,6 +456,32 @@ LogicalResult TfheRustHLEmitter::printOperation(affine::AffineForOp op) {
   return success();
 }
 
+LogicalResult TfheRustHLEmitter::printOperation(affine::AffineParallelOp op) {
+  auto indunctionVar = op.getIVs();
+  if (indunctionVar.size() != 1) {
+    return op.emitOpError()
+           << "AffineParallelOp has more than one induction variable";
+  }
+
+  os << "(" << op.getLowerBoundsMap().getResult(0) << ".."
+     << op.getUpperBoundsMap().getResult(0) << ")"
+     << ".into_par_iter().for_each(|"
+     << variableNames->getNameForValue(indunctionVar[0]) << ":usize| {\n";
+
+  os.indent();
+
+  // Walk the body of the parallel operation in Program order
+  for (auto &op : op.getBody()->getOperations()) {
+    if (failed(translate(op))) {
+      return failure();
+    }
+  }
+
+  os.unindent();
+  os << "});\n";
+  return success();
+}
+
 LogicalResult TfheRustHLEmitter::printOperation(affine::AffineYieldOp op) {
   if (op->getNumResults() != 0) {
     return op.emitOpError() << "AffineYieldOp has non-zero number of results";
@@ -382,19 +522,54 @@ LogicalResult TfheRustHLEmitter::printOperation(arith::IndexCastOp op) {
   return success();
 }
 
+LogicalResult TfheRustHLEmitter::printOperation(arith::ExtSIOp op) {
+  emitAssignPrefix(op.getOut());
+  os << variableNames->getNameForValue(op.getIn()) << " as ";
+  if (failed(emitType(op.getOut().getType()))) {
+    return op.emitOpError()
+           << "Failed to emit index cast type " << op.getOut().getType();
+  }
+  os << ";\n";
+  return success();
+}
+
 LogicalResult TfheRustHLEmitter::printBinaryOp(::mlir::Value result,
                                                ::mlir::Value lhs,
                                                ::mlir::Value rhs,
                                                std::string_view op) {
   emitAssignPrefix(result);
 
-  if (auto cteOp = dyn_cast<mlir::arith::ConstantOp>(rhs.getDefiningOp())) {
-    auto intValue =
-        cast<IntegerAttr>(cteOp.getValue()).getValue().getZExtValue();
-    os << checkOrigin(lhs) << variableNames->getNameForValue(lhs) << " " << op
-       << " " << intValue << "u" << cteOp.getType().getIntOrFloatBitWidth()
-       << ";\n";
-    return success();
+  if (auto *lhsDefOp = lhs.getDefiningOp()) {
+    if (auto cteOp = dyn_cast<mlir::arith::ConstantOp>(lhsDefOp)) {
+      auto intValue =
+          cast<IntegerAttr>(cteOp.getValue()).getValue().getZExtValue();
+      os << checkOrigin(lhs) << variableNames->getNameForValue(lhs) << " " << op
+         << " " << intValue << "u" << cteOp.getType().getIntOrFloatBitWidth()
+         << ";\n";
+      return success();
+    }
+    if (allowedRemainArith(lhsDefOp)) {
+      os << checkOrigin(rhs) << variableNames->getNameForValue(rhs) << " " << op
+         << " " << variableNames->getNameForValue(lhs) << ".clone();\n";
+      return success();
+    }
+  }
+
+  if (auto *rhsDefOp = rhs.getDefiningOp()) {
+    if (auto cteOp = dyn_cast<mlir::arith::ConstantOp>(rhsDefOp)) {
+      auto intValue =
+          cast<IntegerAttr>(cteOp.getValue()).getValue().getZExtValue();
+      os << checkOrigin(rhs) << variableNames->getNameForValue(rhs) << " " << op
+         << " " << intValue << "u" << cteOp.getType().getIntOrFloatBitWidth()
+         << ";\n";
+      return success();
+    }
+
+    if (allowedRemainArith(rhsDefOp)) {
+      os << checkOrigin(lhs) << variableNames->getNameForValue(lhs) << " " << op
+         << " " << variableNames->getNameForValue(rhs) << ".clone();\n";
+      return success();
+    }
   }
 
   // Note: arith.constant op requires signless integer types, but here we
@@ -436,9 +611,15 @@ LogicalResult TfheRustHLEmitter::printOperation(::mlir::arith::TruncIOp op) {
 
 // Use a BTreeMap<(usize, ...), Ciphertext>.
 LogicalResult TfheRustHLEmitter::printOperation(memref::AllocOp op) {
-  os << "let mut " << variableNames->getNameForValue(op.getMemref())
-     << " : BTreeMap<("
-     << std::accumulate(
+  os << "let mut " << variableNames->getNameForValue(op.getMemref());
+
+  if (parallelism) {
+    os << " : Arc<Mutex<BTreeMap<(";
+  } else {
+    os << " : BTreeMap<(";
+  }
+
+  os << std::accumulate(
             std::next(op.getMemref().getType().getShape().begin()),
             op.getMemref().getType().getShape().end(), std::string("usize"),
             [&](const std::string &a, int64_t value) { return a + ", usize"; })
@@ -446,14 +627,22 @@ LogicalResult TfheRustHLEmitter::printOperation(memref::AllocOp op) {
   if (failed(emitType(op.getMemref().getType().getElementType()))) {
     return op.emitOpError() << "Failed to get memref element type";
   }
-  os << "> = BTreeMap::new();\n";
+
+  if (parallelism) {
+    os << ">>> = Arc::new(Mutex::new(BTreeMap::new()));\n";
+  } else {
+    os << "> = BTreeMap::new();\n";
+  }
 
   return success();
 }
 
 // Use a BTreeMap<(usize, ...), Ciphertext>.
 LogicalResult TfheRustHLEmitter::printOperation(memref::DeallocOp op) {
-  os << variableNames->getNameForValue(op.getMemref()) << ".clear();\n";
+  os << variableNames->getNameForValue(op.getMemref());
+  if (parallelism) os << ".lock().unwrap()";
+
+  os << ".clear();\n";
   return success();
 }
 
@@ -461,6 +650,9 @@ LogicalResult TfheRustHLEmitter::printOperation(memref::DeallocOp op) {
 LogicalResult TfheRustHLEmitter::printOperation(memref::StoreOp op) {
   // We assume here that the indices are SSA values (not integer attributes).
   os << variableNames->getNameForValue(op.getMemref());
+
+  if (parallelism) os << ".lock().unwrap()";
+
   os << ".insert((" << commaSeparatedValues(op.getIndices(), [&](Value value) {
     return variableNames->getNameForValue(value) + std::string(" as usize");
   }) << "), ";
@@ -476,9 +668,23 @@ LogicalResult TfheRustHLEmitter::printOperation(memref::StoreOp op) {
 
 // Produces a &Ciphertext
 LogicalResult TfheRustHLEmitter::printOperation(memref::LoadOp op) {
+  emitAssignPrefix(op.getResult());
+
   // We assume here that the indices are SSA values (not integer attributes).
+  if (dyn_cast_or_null<memref::GetGlobalOp>(op.getMemRef().getDefiningOp())) {
+    // Global arrays are 1-dimensional, so flatten the index
+    os << variableNames->getNameForValue(op.getMemref());
+
+    os << "["
+       << flattenIndexExpressionSOP(
+              op.getMemRefType(), op.getIndices(), [&](Value value) {
+                return variableNames->getNameForValue(value);
+              });
+    os << "]; \n";
+    return success();
+  }
+
   if (isa<BlockArgument>(op.getMemref())) {
-    emitAssignPrefix(op.getResult());
     os << "&" << variableNames->getNameForValue(op.getMemRef());
     for (auto value : op.getIndices()) {
       os << "[" << variableNames->getNameForValue(value) << "]";
@@ -488,14 +694,26 @@ LogicalResult TfheRustHLEmitter::printOperation(memref::LoadOp op) {
   }
 
   // Treat this as a BTreeMap
-  emitAssignPrefix(op.getResult());
-  os << "&" << variableNames->getNameForValue(op.getMemref()) << ".get(&("
-     << commaSeparatedValues(op.getIndices(),
-                             [&](Value value) {
-                               return variableNames->getNameForValue(value) +
-                                      " as usize";
-                             })
-     << ")).unwrap();\n";
+  auto varName = variableNames->getNameForValue(op.getMemref());
+
+  if (parallelism &&
+      !isa<memref::GetGlobalOp>(op.getMemRef().getDefiningOp())) {
+    os << varName << ".lock().unwrap()";
+  } else {
+    os << "&" << varName;
+  }
+
+  os << ".get(&(" << commaSeparatedValues(op.getIndices(), [&](Value value) {
+    return variableNames->getNameForValue(value) + " as usize";
+  }) << ")).unwrap()";
+
+  if (parallelism &&
+      !isa<memref::GetGlobalOp>(op.getMemRef().getDefiningOp())) {
+    os << ".clone();\n";
+  } else {
+    os << ";\n";
+  }
+
   return success();
 }
 
@@ -716,8 +934,9 @@ std::string TfheRustHLEmitter::checkOrigin(Value value) {
 }
 
 TfheRustHLEmitter::TfheRustHLEmitter(raw_ostream &os,
-                                     SelectVariableNames *variableNames)
-    : os(os), variableNames(variableNames) {}
+                                     SelectVariableNames *variableNames,
+                                     bool parallelism)
+    : os(os), variableNames(variableNames), parallelism(parallelism) {}
 }  // namespace tfhe_rust
 }  // namespace heir
 }  // namespace mlir

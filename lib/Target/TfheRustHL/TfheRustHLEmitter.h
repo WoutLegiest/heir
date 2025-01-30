@@ -34,7 +34,8 @@ void registerToTfheRustHLTranslation();
 
 class TfheRustHLEmitter {
  public:
-  TfheRustHLEmitter(raw_ostream &os, SelectVariableNames *variableNames);
+  TfheRustHLEmitter(raw_ostream &os, SelectVariableNames *variableNames,
+                    bool parallelism);
 
   LogicalResult translate(::mlir::Operation &operation);
   bool containsVectorOperands(Operation *op);
@@ -47,12 +48,16 @@ class TfheRustHLEmitter {
   /// values.
   SelectVariableNames *variableNames;
 
+  /// Flag to indicate if the program contains parallelism.
+  bool parallelism;
+
   // Functions for printing individual ops
   LogicalResult printOperation(::mlir::ModuleOp op);
   LogicalResult printOperation(::mlir::func::FuncOp op);
   LogicalResult printOperation(::mlir::func::ReturnOp op);
   LogicalResult printOperation(::mlir::func::CallOp op);
   LogicalResult printOperation(affine::AffineForOp op);
+  LogicalResult printOperation(affine::AffineParallelOp op);
   LogicalResult printOperation(affine::AffineYieldOp op);
   LogicalResult printOperation(affine::AffineStoreOp op);
   LogicalResult printOperation(affine::AffineLoadOp op);
@@ -61,6 +66,7 @@ class TfheRustHLEmitter {
   LogicalResult printOperation(arith::ShLIOp op);
   LogicalResult printOperation(arith::AndIOp op);
   LogicalResult printOperation(arith::ShRSIOp op);
+  LogicalResult printOperation(arith::ExtSIOp op);
   LogicalResult printOperation(arith::TruncIOp op);
   LogicalResult printOperation(tensor::ExtractOp op);
   LogicalResult printOperation(tensor::FromElementsOp op);
@@ -69,6 +75,7 @@ class TfheRustHLEmitter {
   LogicalResult printOperation(memref::DeallocOp op);
   LogicalResult printOperation(memref::LoadOp op);
   LogicalResult printOperation(memref::StoreOp op);
+  LogicalResult printOperation(memref::GetGlobalOp op);
   LogicalResult printOperation(AddOp op);
   LogicalResult printOperation(SubOp op);
   LogicalResult printOperation(MulOp op);

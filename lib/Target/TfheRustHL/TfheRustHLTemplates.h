@@ -13,6 +13,11 @@ use tfhe::{FheUint4, FheUint8, FheUint16, FheUint32, FheUint64};
 use tfhe::prelude::*;
 )rust";
 
+constexpr std::string_view kModulePreludeParallel = R"rust(
+use rayon::prelude::*;
+use std::sync::{Arc, Mutex};
+)rust";
+
 }  // namespace tfhe_rust
 }  // namespace heir
 }  // namespace mlir
