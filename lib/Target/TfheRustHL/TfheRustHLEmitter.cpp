@@ -82,6 +82,11 @@ FailureOr<DenseElementsAttr> getConstantGlobalData(memref::GetGlobalOp op) {
 // Bring this function to the Utils.h/cpp ?
 // Function to check if an operation is allowed to remain in the Arith dialect
 static bool allowedRemainArith(Operation *op) {
+  auto check =
+      static_cast<bool>(op->getAttrOfType<mlir::StringAttr>("lwe_annotation"));
+
+  if (check) return false;
+
   return llvm::TypeSwitch<Operation *, bool>(op)
       .Case<mlir::arith::ConstantOp>([](auto op) {
         // This lambda will be called for any of the matched operation types
@@ -92,6 +97,9 @@ static bool allowedRemainArith(Operation *op) {
       // Other cases: Memref comes from function -> need to convert to LWE
       .Case<memref::LoadOp>([](memref::LoadOp memrefLoad) {
         return memrefLoad.getMemRef().getDefiningOp() != nullptr;
+      })
+      .Case<affine::AffineLoadOp>([](affine::AffineLoadOp affineLoad) {
+        return affineLoad.getMemRef().getDefiningOp() != nullptr;
       })
       .Case<mlir::arith::ExtUIOp, mlir::arith::ExtSIOp, mlir::arith::TruncIOp>(
           [](auto op) {
@@ -246,6 +254,10 @@ LogicalResult TfheRustHLEmitter::printOperation(func::FuncOp funcOp) {
       os << ",\n";
     }
   }
+  if (parallelism) {
+    os << "sks: &ServerKey\n";
+  }
+
   os.unindent();
   os << ") -> ";
 
@@ -440,15 +452,11 @@ LogicalResult TfheRustHLEmitter::printOperation(affine::AffineForOp op) {
      << " {\n";
   os.indent();
 
-  auto res = op.getBody()->walk([&](Operation *op) {
-    if (failed(translate(*op))) {
-      return WalkResult::interrupt();
+  // Walk the body of the parallel operation in Program order
+  for (auto &op : op.getBody()->getOperations()) {
+    if (failed(translate(op))) {
+      return failure();
     }
-    return WalkResult::advance();
-  });
-
-  if (res.wasInterrupted()) {
-    return failure();
   }
 
   os.unindent();
@@ -469,6 +477,7 @@ LogicalResult TfheRustHLEmitter::printOperation(affine::AffineParallelOp op) {
      << variableNames->getNameForValue(indunctionVar[0]) << ":usize| {\n";
 
   os.indent();
+  os << "set_server_key(sks.clone());\n";
 
   // Walk the body of the parallel operation in Program order
   for (auto &op : op.getBody()->getOperations()) {
@@ -717,10 +726,12 @@ LogicalResult TfheRustHLEmitter::printOperation(memref::LoadOp op) {
   return success();
 }
 
-// FIXME?: This is a hack to get the index of the value
+// Hack to get the int definition of the index of the value
 static int extractIntFromValue(Value value) {
-  if (auto ctOp = dyn_cast<arith::ConstantOp>(value.getDefiningOp())) {
-    return cast<IntegerAttr>(ctOp.getValue()).getValue().getSExtValue();
+  if (auto *defOp = value.getDefiningOp()) {
+    return cast<IntegerAttr>(dyn_cast<arith::ConstantOp>(defOp).getValue())
+        .getValue()
+        .getSExtValue();
   }
   return -1;
 }
@@ -732,9 +743,16 @@ LogicalResult TfheRustHLEmitter::printOperation(affine::AffineStoreOp op) {
   OpBuilder builder(op->getContext());
   auto indices = affine::expandAffineMap(builder, op->getLoc(), op.getMap(),
                                          op.getIndices());
-
   os << variableNames->getNameForValue(op.getMemref());
+
+  if (parallelism) os << ".lock().unwrap()";
+
   os << ".insert((" << commaSeparatedValues(indices.value(), [&](Value value) {
+    auto ctOp = extractIntFromValue(value);
+    // Case if one of the indices is an input or loop variable
+    if (ctOp == -1) {
+      return variableNames->getNameForValue(value) + " as usize";
+    }
     return std::to_string(extractIntFromValue(value)) +
            std::string(" as usize");
   }) << "), ";
@@ -754,27 +772,56 @@ LogicalResult TfheRustHLEmitter::printOperation(affine::AffineLoadOp op) {
   OpBuilder builder(op->getContext());
   auto indices = affine::expandAffineMap(builder, op->getLoc(), op.getMap(),
                                          op.getIndices());
+  emitAssignPrefix(op.getResult());
+
+  if (dyn_cast_or_null<memref::GetGlobalOp>(op.getMemRef().getDefiningOp())) {
+    // Global arrays are 1-dimensional, so flatten the index
+    os << variableNames->getNameForValue(op.getMemref());
+
+    os << "["
+       << flattenIndexExpressionSOP(
+              op.getMemRefType(), indices.value(), [&](Value value) {
+                return variableNames->getNameForValue(value);
+              });
+    os << "]; \n";
+    return success();
+  }
 
   if (isa<BlockArgument>(op.getMemref())) {
-    emitAssignPrefix(op.getResult());
-
     os << "&" << variableNames->getNameForValue(op.getMemRef());
     for (auto value : indices.value()) {
-      os << "[" << std::to_string(extractIntFromValue(value)) << "]";
+      auto ctOp = extractIntFromValue(value);
+      if (ctOp == -1) {
+        os << "[" << variableNames->getNameForValue(value) << "]";
+      } else {
+        os << "[" << std::to_string(extractIntFromValue(value)) << "]";
+      }
     }
     os << ";\n";
     return success();
   }
 
   // Treat this as a BTreeMap
-  emitAssignPrefix(op.getResult());
-  os << "&" << variableNames->getNameForValue(op.getMemref()) << ".get(&("
-     << commaSeparatedValues(
-            indices.value(),
-            [&](Value value) {
-              return std::to_string(extractIntFromValue(value));
-            })
-     << ")).unwrap();\n";
+  auto varName = variableNames->getNameForValue(op.getMemref());
+
+  if (parallelism &&
+      !isa<memref::GetGlobalOp>(op.getMemRef().getDefiningOp())) {
+    os << varName << ".lock().unwrap()";
+  } else {
+    os << varName;
+  }
+
+  os << ".get(&(" << commaSeparatedValues(op.getIndices(), [&](Value value) {
+    return variableNames->getNameForValue(value) + " as usize";
+  }) << ")).unwrap()";
+
+  if (parallelism &&
+      !isa<memref::GetGlobalOp>(op.getMemRef().getDefiningOp())) {
+    os << ".clone();\n";
+  } else {
+    os << ";\n";
+  }
+
   return success();
 }
 

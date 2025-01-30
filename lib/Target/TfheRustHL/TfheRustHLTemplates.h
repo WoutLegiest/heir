@@ -16,6 +16,7 @@ use tfhe::prelude::*;
 constexpr std::string_view kModulePreludeParallel = R"rust(
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
+use tfhe::{set_server_key, ServerKey};
 )rust";
 
 }  // namespace tfhe_rust

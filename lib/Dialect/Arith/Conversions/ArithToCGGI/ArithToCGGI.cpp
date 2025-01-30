@@ -43,6 +43,9 @@ static bool allowedRemainArith(Operation *op) {
       .Case<memref::LoadOp>([](memref::LoadOp memrefLoad) {
         return memrefLoad.getMemRef().getDefiningOp() != nullptr;
       })
+      .Case<affine::AffineLoadOp>([](affine::AffineLoadOp loadOp) {
+        return loadOp.getMemRef().getDefiningOp() != nullptr;
+      })
       .Case<mlir::arith::ExtUIOp, mlir::arith::ExtSIOp, mlir::arith::TruncIOp>(
           [](auto op) {
             // This lambda will be called for any of the matched operation types
@@ -58,8 +61,21 @@ static bool allowedRemainArith(Operation *op) {
 }
 
 static bool hasLWEAnnotation(Operation *op) {
-  return static_cast<bool>(
-      op->getAttrOfType<mlir::StringAttr>("lwe_annotation"));
+  auto check =
+      static_cast<bool>(op->getAttrOfType<mlir::StringAttr>("lwe_annotation"));
+
+  if (check) return check;
+
+  // Check recursively if a defining op has a LWE annotation
+  return llvm::TypeSwitch<Operation *, bool>(op)
+      .Case<mlir::arith::ExtUIOp, mlir::arith::ExtSIOp, mlir::arith::TruncIOp>(
+          [](auto op) {
+            if (auto *defOp = op.getIn().getDefiningOp()) {
+              return hasLWEAnnotation(defOp);
+            }
+            return false;
+          })
+      .Default([](Operation *) { return false; });
 }
 
 static Value materializeTarget(OpBuilder &builder, Type type, ValueRange inputs,
@@ -279,34 +295,39 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
 
     target.addDynamicallyLegalOp<mlir::arith::ExtSIOp>([&](Operation *op) {
       if (auto *defOp =
-              cast<mlir::arith::ExtSIOp>(op).getOperand().getDefiningOp()) {
-        return hasLWEAnnotation(defOp) || allowedRemainArith(defOp);
-      }
+              cast<mlir::arith::ExtSIOp>(op).getOperand().getDefiningOp())
+        return !hasLWEAnnotation(defOp) && allowedRemainArith(defOp);
+
       return false;
     });
 
     target.addDynamicallyLegalOp<memref::SubViewOp, memref::CopyOp,
                                  tensor::FromElementsOp, tensor::ExtractOp,
-                                 affine::AffineStoreOp, affine::AffineLoadOp>(
-        [&](Operation *op) {
-          return typeConverter.isLegal(op->getOperandTypes()) &&
-                 typeConverter.isLegal(op->getResultTypes());
-        });
+                                 affine::AffineLoadOp>([&](Operation *op) {
+      return typeConverter.isLegal(op->getOperandTypes()) &&
+             typeConverter.isLegal(op->getResultTypes());
+    });
 
     target.addDynamicallyLegalOp<memref::AllocOp>([&](Operation *op) {
       // Check if all Store ops are constants or GetGlobals, if not store op,
       // accepts Check if there is at least one Store op that is a constants
       auto containsAnyStoreOp = llvm::any_of(op->getUses(), [&](OpOperand &op) {
-        if (auto defOp = dyn_cast<memref::StoreOp>(op.getOwner())) {
+        if (auto defOp = dyn_cast<memref::StoreOp>(op.getOwner()))
           return allowedRemainArith(defOp.getValue().getDefiningOp());
-        }
+
+        if (auto defOp = dyn_cast<affine::AffineStoreOp>(op.getOwner()))
+          return allowedRemainArith(defOp.getValue().getDefiningOp());
+
         return false;
       });
       auto allStoreOpsAreArith =
           llvm::all_of(op->getUses(), [&](OpOperand &op) {
-            if (auto defOp = dyn_cast<memref::StoreOp>(op.getOwner())) {
+            if (auto defOp = dyn_cast<memref::StoreOp>(op.getOwner()))
               return allowedRemainArith(defOp.getValue().getDefiningOp());
-            }
+
+            if (auto defOp = dyn_cast<affine::AffineStoreOp>(op.getOwner()))
+              return allowedRemainArith(defOp.getValue().getDefiningOp());
+
             return true;
           });
 
@@ -316,56 +337,59 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
               typeConverter.isLegal(op->getResultTypes()));
     });
 
-    target.addDynamicallyLegalOp<memref::StoreOp>([&](Operation *op) {
+    target.addDynamicallyLegalOp<memref::StoreOp,
+                                 affine::AffineStoreOp>([&](Operation *op) {
       if (typeConverter.isLegal(op->getOperandTypes()) &&
           typeConverter.isLegal(op->getResultTypes())) {
         return true;
       }
 
-      if (auto lweAttr =
-              op->getAttrOfType<mlir::StringAttr>("lwe_annotation")) {
+      if (auto lweAttr = op->getAttrOfType<mlir::StringAttr>("lwe_annotation"))
         return false;
+
+      if (auto defOp = dyn_cast<memref::StoreOp>(op)) {
+        if (isa<mlir::arith::ConstantOp>(defOp.getValue().getDefiningOp()) ||
+            isa<mlir::memref::GetGlobalOp>(defOp.getValue().getDefiningOp()))
+          return true;
       }
 
-      if (auto *defOp = cast<memref::StoreOp>(op).getValue().getDefiningOp()) {
-        if (isa<mlir::arith::ConstantOp>(defOp) ||
-            isa<mlir::memref::GetGlobalOp>(defOp)) {
+      if (auto defOp = dyn_cast<affine::AffineStoreOp>(op)) {
+        if (isa<mlir::arith::ConstantOp>(defOp.getValue().getDefiningOp()) ||
+            isa<mlir::memref::GetGlobalOp>(defOp.getValue().getDefiningOp()))
           return true;
-        }
       }
+
       return true;
     });
 
     // Convert LoadOp if memref comes from an argument
-    target.addDynamicallyLegalOp<memref::LoadOp>([&](Operation *op) {
-      if (typeConverter.isLegal(op->getOperandTypes()) &&
-          typeConverter.isLegal(op->getResultTypes())) {
-        return true;
-      }
+    target.addDynamicallyLegalOp<memref::LoadOp, affine::AffineLoadOp>(
+        [&](Operation *op) {
+          if (typeConverter.isLegal(op->getOperandTypes()) &&
+              typeConverter.isLegal(op->getResultTypes()))
+            return true;
 
-      if (dyn_cast<memref::LoadOp>(op).getMemRef().getDefiningOp() == nullptr) {
-        return false;
-      }
+          if (auto lweAttr =
+                  op->getAttrOfType<mlir::StringAttr>("lwe_annotation"))
+            return false;
 
-      if (auto lweAttr =
-              op->getAttrOfType<mlir::StringAttr>("lwe_annotation")) {
-        return false;
-      }
+          if (auto memrefLoadOp = dyn_cast<memref::LoadOp>(op))
+            return memrefLoadOp.getMemRef().getDefiningOp() != nullptr;
 
-      return true;
-    });
+          if (auto affineLoadOp = dyn_cast<affine::AffineLoadOp>(op))
+            return affineLoadOp.getMemRef().getDefiningOp() != nullptr;
+
+          return true;
+        });
 
     // Convert Dealloc if memref comes from an argument
     target.addDynamicallyLegalOp<memref::DeallocOp>([&](Operation *op) {
       if (typeConverter.isLegal(op->getOperandTypes()) &&
-          typeConverter.isLegal(op->getResultTypes())) {
+          typeConverter.isLegal(op->getResultTypes()))
         return true;
-      }
 
-      if (auto lweAttr =
-              op->getAttrOfType<mlir::StringAttr>("lwe_annotation")) {
+      if (auto lweAttr = op->getAttrOfType<mlir::StringAttr>("lwe_annotation"))
         return false;
-      }
 
       return true;
     });
@@ -379,14 +403,13 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
         ConvertAny<memref::DeallocOp>, ConvertAny<memref::SubViewOp>,
         ConvertAny<memref::CopyOp>, ConvertAny<memref::StoreOp>,
         ConvertAny<tensor::FromElementsOp>, ConvertAny<tensor::ExtractOp>,
-        ConvertAny<affine::AffineStoreOp>, ConvertAny<affine::AffineLoadOp> >(
+        ConvertAny<affine::AffineStoreOp>, ConvertAny<affine::AffineLoadOp>>(
         typeConverter, context);
 
     addStructuralConversionPatterns(typeConverter, patterns, target);
 
-    if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
+    if (failed(applyPartialConversion(module, target, std::move(patterns))))
       return signalPassFailure();
-    }
   }
 };
 
