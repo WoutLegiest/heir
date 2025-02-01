@@ -13,7 +13,7 @@ module attributes {tf_saved_model.semantics} {
     %alloc_0 = memref.alloc() {alignment = 64 : i64} : memref<1x10xi32>
     %alloc_1 = memref.alloc() {alignment = 64 : i64} : memref<1x15xi32>
     affine.parallel (%arg1) = (0) to (1) {
-      affine.parallel (%arg2) = (0) to (10) {
+      affine.parallel (%arg2) = (4) to (10) {
         memref.store %c0_i32, %alloc[%c0, %arg2] : memref<1x31xi32>
         affine.for %arg3 = 0 to 52 {
           %1 = memref.load %0[%arg2, %arg3] : memref<31x52xi4>

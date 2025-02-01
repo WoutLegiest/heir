@@ -404,26 +404,56 @@ LogicalResult TfheRustHLEmitter::printOperation(affine::AffineForOp op) {
   return success();
 }
 
-LogicalResult TfheRustHLEmitter::printOperation(affine::AffineParallelOp op) {
-  auto loopBounds = op.getConstantRanges();
+void walkAffineParallelOps(mlir::Operation *op) {
+  // Check if the operation is an affine.parallel operation
+  if (auto parallelOp = llvm::dyn_cast<mlir::affine::AffineParallelOp>(op)) {
+    // Get the body region of the affine.parallel operation
+    mlir::Region &bodyRegion = parallelOp.getRegion();
 
-  os << "for_par " << "Naampje in " << loopBounds->front() << ".."
-     << loopBounds->back() << " {\n";
+    // Iterate over the blocks in the body region
+    for (mlir::Block &block : bodyRegion.getBlocks()) {
+      // Iterate over the operations in the block
+      for (mlir::Operation &nestedOp : block.getOperations()) {
+        // Process the nested operation
+        llvm::outs() << "Found operation: " << nestedOp.getName() << "\n";
+
+        // If the nested operation has regions, recursively walk them
+        for (mlir::Region &region : nestedOp.getRegions()) {
+          for (mlir::Block &nestedBlock : region.getBlocks()) {
+            for (mlir::Operation &deepNestedOp : nestedBlock.getOperations()) {
+              walkAffineParallelOps(&deepNestedOp);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+LogicalResult TfheRustHLEmitter::printOperation(affine::AffineParallelOp op) {
+  auto indunctionVar = op.getIVs();
+  if (indunctionVar.size() != 1) {
+    return op.emitOpError()
+           << "AffineParallelOp has more than one induction variable";
+  }
+  // ToDo: Check of stepsize is 1
+
+  os << "(" << op.getLowerBoundsMap().getResult(0) << ".."
+     << op.getUpperBoundsMap().getResult(0) << ")"
+     << ".into_par_iter().for_each(|"
+     << variableNames->getNameForValue(indunctionVar[0]) << ":usize | {\n";
+
   os.indent();
 
-  auto res = op.getBody()->walk([&](Operation *op) {
-    if (failed(translate(*op))) {
-      return WalkResult::interrupt();
+  // Walk the body of the parallel operation in Program order
+  for (auto &op : op.getBody()->getOperations()) {
+    if (failed(translate(op))) {
+      return failure();
     }
-    return WalkResult::advance();
-  });
-
-  if (res.wasInterrupted()) {
-    return failure();
   }
 
   os.unindent();
-  os << "}\n";
+  os << "});\n";
   return success();
 }
 
@@ -600,6 +630,7 @@ LogicalResult TfheRustHLEmitter::printOperation(memref::LoadOp op) {
   // We assume here that the indices are SSA values (not integer attributes).
   if (dyn_cast_or_null<memref::GetGlobalOp>(op.getMemRef().getDefiningOp())) {
     // Global arrays are 1-dimensional, so flatten the index
+    emitAssignPrefix(op.getResult());
     os << variableNames->getNameForValue(op.getMemref());
 
     os << "["
@@ -854,3 +885,24 @@ TfheRustHLEmitter::TfheRustHLEmitter(raw_ostream &os,
 }  // namespace tfhe_rust
 }  // namespace heir
 }  // namespace mlir
+
+// use rayon::prelude::*;
+// use std::sync::{Arc, Mutex};
+
+// fn main() {
+//     let n = 100; // Example size
+//     use std::sync::Mutex;
+//     let data = Arc::new(Mutex::new(vec![vec![0; n]; n])); // Example 2D data
+//     structure to manipulate
+
+//     // Parallelize both outer and inner loops
+//     (0..n).into_par_iter().for_each(|i| {
+//         (0..n).into_par_iter().for_each(|j| {
+//             let mut data = data.lock().unwrap();
+//             data[i][j] = i + j; // Example operation
+//             data[i][j] = i + j; // Example operation
+//         });
+//     });
+
+//     println!("{:?}", data);
+// }
