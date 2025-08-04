@@ -131,6 +131,12 @@ LogicalResult MultiLutLinCombOp::verify() {
   return success();
 }
 
+LogicalResult ActFOp::verify() {
+  if (getAttributeNames().empty())
+    return emitOpError("expected at least one attribute name");
+  return success();
+}
+
 }  // namespace cggi
 }  // namespace heir
 }  // namespace mlir

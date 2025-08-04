@@ -45,7 +45,7 @@ def CGGI_PackedOp : CGGI_Op<"packed_gates",
     LWECiphertextLike:$rhs
   );
 
-      let description = [{
+    let description = [{
      Operation to where different Boolean gates are executed pairwise between elements of two ciphertext arrays.
 
      For example,
@@ -145,4 +145,19 @@ def CGGI_CmpOp : CGGI_Op<"cmp", [
   Note: https://mlir.llvm.org/docs/Dialects/ArithOps/#arithcmpi-arithcmpiop
   Note this operations to indirect mirror the TFHE-rs implmementation.
 }];
+}
+
+def CGGI_ActFOp : CGGI_Op<"actf", [
+    Pure,
+    ElementwiseMappable,
+    Scalarizable
+]> {
+  let arguments = (ins LWECiphertextLike:$input);
+  let results = (outs LWECiphertextLike:$output);
+  let summary = "High level operation to apply an activation function to a ciphertext. Note this operations mirrors an arbitrary activation function, which is not defined in CGGI, but rather in the backend target.";
+  let description = [{
+    The activation function is defined by the backend target.
+    For example, it can be a sigmoid, ReLU, GeLU or a tanh function.
+  }];
+  let hasVerifier = 1;
 }

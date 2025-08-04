@@ -44,6 +44,12 @@ void CreateTrivialOp::getCanonicalizationPatterns(RewritePatternSet &results,
   results.add<HoistCreateTrivial>(context);
 }
 
+LogicalResult ActFOp::verify() {
+  if (getAttributeNames().empty())
+    return emitOpError("expected at least one attribute name");
+  return success();
+}
+
 }  // namespace tfhe_rust
 }  // namespace heir
 }  // namespace mlir

@@ -133,6 +133,22 @@ def TfheRust_CmpOp : TfheRust_Op<"cmp", [
 }];
 }
 
+def TfheRust_ActFOp : TfheRust_Op<"actf", [
+    Pure,
+    ElementwiseMappable,
+    Scalarizable
+]> {
+  let arguments = (ins TfheRust_CiphertextLikeType:$input);
+  let results = (outs TfheRust_CiphertextLikeType:$output);
+  let summary = "High level operation to apply an activation function to a ciphertext. Note this operations mirrors an arbitrary activation function, which is not defined in CGGI, but rather in the backend target.";
+  let description = [{
+    The activation function is defined by the backend target.
+    For example, it can be a sigmoid, ReLU, GeLU or a tanh function.
+  }];
+  let hasVerifier = 1;
+}
+
+
  /******************
  * PBS OPERATIONS *
  ******************/
