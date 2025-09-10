@@ -15,6 +15,7 @@ cc_library(
         "@heir//lib/Dialect/CGGI/IR:Dialect",
         "@heir//lib/Dialect/Comb/IR:Dialect",
         "@heir//lib/Dialect/LWE/IR:Dialect",
+        "@heir//lib/Dialect/MathExt/IR:Dialect",
         "@heir//lib/Utils:ConversionUtils",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:AffineDialect",

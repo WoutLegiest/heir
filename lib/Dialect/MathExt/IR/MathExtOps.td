@@ -21,4 +21,16 @@ def MathExt_SignOp : MathExt_Op<"sign", [Pure, ElementwiseMappable,SameOperandsA
   let results = (outs SignlessIntegerOrFloatLike:$result);
    let assemblyFormat = "$value attr-dict `:` type($result)";
 }
+
+def MathExt_OneHotOp : MathExt_Op<"one_hot", [Pure]> {
+  let summary = "Returns the one-hot encoding of the input value";
+  let description = [{
+   Return a tensor of boolean values where only the index corresponding to the input value is true.
+  }];
+  let arguments = (ins AnyInteger:$value);
+  let results = (outs AnyRankedTensor:$result);
+   let assemblyFormat = "$value attr-dict `:` type($value) `->` type($result)";
+}
+
+
 #endif  // LIB_DIALECT_MATHEXT_IR_MATHEXTOPS_TD_

@@ -12,6 +12,7 @@
 #include "lib/Dialect/LWE/IR/LWEDialect.h"
 #include "lib/Dialect/LWE/IR/LWEOps.h"
 #include "lib/Dialect/LWE/IR/LWETypes.h"
+#include "lib/Dialect/MathExt/IR/MathExtOps.h"
 #include "lib/Utils/ConversionUtils.h"
 #include "llvm/include/llvm/ADT/STLExtras.h"          // from @llvm-project
 #include "llvm/include/llvm/ADT/TypeSwitch.h"         // from @llvm-project
@@ -716,8 +717,8 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
         ConvertAny<linalg::GenericOp>, ConvertAny<linalg::FillOp>,
         ConvertAny<tensor::InsertOp>, ConvertAny<tensor::EmptyOp>,
         ConvertAny<affine::AffineStoreOp>, ConvertAny<affine::AffineLoadOp>,
-        ConvertAny<affine::AffineForOp>, ConvertAny<affine::AffineYieldOp> >(
-        typeConverter, context);
+        ConvertAny<affine::AffineForOp>, ConvertAny<affine::AffineYieldOp>,
+        ConvertAny<math_ext::OneHotOp> >(typeConverter, context);
 
     addStructuralConversionPatterns(typeConverter, patterns, target);
 
