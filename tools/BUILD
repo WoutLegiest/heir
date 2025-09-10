@@ -65,6 +65,7 @@ cc_binary(
         "@heir//lib/Dialect/Lattigo/Transforms:AllocToInplace",
         "@heir//lib/Dialect/Lattigo/Transforms:ConfigureCryptoContext",
         "@heir//lib/Dialect/MathExt/IR:Dialect",
+        "@heir//lib/Dialect/MathExt/Transforms:BufferizableOpInterface",
         "@heir//lib/Dialect/Mgmt/IR:Dialect",
         "@heir//lib/Dialect/Mgmt/Transforms",
         "@heir//lib/Dialect/ModArith/Conversions/ModArithToArith",

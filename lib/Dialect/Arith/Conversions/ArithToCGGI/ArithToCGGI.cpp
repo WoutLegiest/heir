@@ -9,6 +9,8 @@
 #include "lib/Dialect/LWE/IR/LWEAttributes.h"
 #include "lib/Dialect/LWE/IR/LWEOps.h"
 #include "lib/Dialect/LWE/IR/LWETypes.h"
+#include "lib/Dialect/MathExt/IR/MathExtDialect.h"
+#include "lib/Dialect/MathExt/IR/MathExtOps.h"
 #include "lib/Utils/ConversionUtils.h"
 #include "llvm/include/llvm/ADT/STLExtras.h"          // from @llvm-project
 #include "llvm/include/llvm/ADT/TypeSwitch.h"         // from @llvm-project
@@ -133,7 +135,17 @@ static Value materializeTarget(OpBuilder& builder, Type type, ValueRange inputs,
     return cggi::CreateTrivialOp::create(builder, loc, type, intAttr);
   }
   // Comes from function/loop argument: Trivial encrypt through LWE
-  auto ciphertextType = cast<lwe::LWECiphertextType>(type);
+  lwe::LWECiphertextType ciphertextType;
+
+  if (auto shapedType = dyn_cast<ShapedType>(type)) {
+    auto tensorElementSize =
+        shapedType.getElementType().getIntOrFloatBitWidth();
+    ciphertextType = lwe::getDefaultCGGICiphertextType(builder.getContext(),
+                                                       tensorElementSize);
+  } else {
+    ciphertextType = lwe::getDefaultCGGICiphertextType(
+        builder.getContext(), inputType.getIntOrFloatBitWidth());
+  }
 
   auto plaintextBits = ciphertextType.getPlaintextSpace()
                            .getRing()
@@ -324,6 +336,29 @@ struct ConvertSelectOp : public OpConversionPattern<mlir::arith::SelectOp> {
   }
 };
 
+struct ConvertLutOp : public OpConversionPattern<mlir::heir::comb::LUTOp> {
+  ConvertLutOp(mlir::MLIRContext* context)
+      : OpConversionPattern<mlir::heir::comb::LUTOp>(context) {}
+
+  using OpConversionPattern::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(
+      mlir::heir::comb::LUTOp op, OpAdaptor adaptor,
+      ConversionPatternRewriter& rewriter) const override {
+    ImplicitLocOpBuilder b(op.getLoc(), rewriter);
+
+    ArithToCGGITypeConverter typeConverter(op->getContext());
+    auto outputType = typeConverter.convertType(op.getResult().getType());
+
+    auto lutOp = cggi::SelectorLutLinCombOp::create(
+        b, outputType, adaptor.getInputs(), adaptor.getCoefficientsAttr(),
+        adaptor.getLookupTableAttr());
+
+    rewriter.replaceOp(op, lutOp);
+    return success();
+  }
+};
+
 template <typename SourceArithShOp, typename TargetCGGIShOp>
 struct ConvertShOp : public OpConversionPattern<SourceArithShOp> {
   ConvertShOp(mlir::MLIRContext* context)
@@ -445,8 +480,8 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
     RewritePatternSet patterns(context);
     ConversionTarget target(*context);
     target.addLegalDialect<cggi::CGGIDialect>();
-    target.addIllegalDialect<mlir::arith::ArithDialect>();
-    target.addLegalOp<mlir::arith::ConstantOp>();
+    target.addIllegalDialect<mlir::arith::ArithDialect, comb::CombDialect>();
+    target.addLegalOp<mlir::arith::ConstantOp, mlir::arith::IndexCastUIOp>();
 
     target.addDynamicallyLegalOp<mlir::arith::SubIOp, mlir::arith::AddIOp,
                                  mlir::arith::MulIOp>([&](Operation* op) {
@@ -475,8 +510,14 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
       return false;
     });
 
-    target.addDynamicallyLegalOp<memref::SubViewOp, memref::CopyOp,
-                                 tensor::FromElementsOp, tensor::ExtractOp>(
+    // Tensor ops (and other allowed dialects) are allowed only if their
+    // operands and results are the correct type
+    target.addDynamicallyLegalOp<
+        memref::SubViewOp, memref::CopyOp, tensor::FromElementsOp,
+        tensor::ExtractOp, tensor::InsertOp, bufferization::AllocTensorOp,
+        tensor::EmptyOp, tensor::ExtractSliceOp, tensor::ConcatOp,
+        tensor::CastOp, tensor::DimOp, linalg::YieldOp, linalg::GenericOp,
+        linalg::FillOp, affine::AffineForOp, affine::AffineYieldOp>(
         [&](Operation* op) {
           return typeConverter.isLegal(op->getOperandTypes()) &&
                  typeConverter.isLegal(op->getResultTypes());
@@ -606,7 +647,7 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
 
     patterns.add<
         ConvertTruncIOp, ConvertExtUIOp, ConvertExtSIOp, ConvertSelectOp,
-        ConvertCmpOp, ConvertSubOp,
+        ConvertCmpOp, ConvertSubOp, ConvertLutOp,
         ConvertShOp<mlir::arith::ShRSIOp, cggi::ScalarShiftRightOp>,
         ConvertShOp<mlir::arith::ShRUIOp, cggi::ScalarShiftRightOp>,
         ConvertShOp<mlir::arith::ShLIOp, cggi::ScalarShiftLeftOp>,
@@ -621,7 +662,13 @@ struct ArithToCGGI : public impl::ArithToCGGIBase<ArithToCGGI> {
         ConvertAny<memref::DeallocOp>, ConvertAny<memref::SubViewOp>,
         ConvertAny<memref::CopyOp>, ConvertAny<memref::StoreOp>,
         ConvertAny<tensor::FromElementsOp>, ConvertAny<tensor::ExtractOp>,
-        ConvertAny<affine::AffineStoreOp>, ConvertAny<affine::AffineLoadOp> >(
+        ConvertAny<tensor::DimOp>, ConvertAny<tensor::ExtractSliceOp>,
+        ConvertAny<tensor::CastOp>, ConvertAny<tensor::ConcatOp>,
+        ConvertAny<bufferization::AllocTensorOp>, ConvertAny<linalg::YieldOp>,
+        ConvertAny<linalg::GenericOp>, ConvertAny<linalg::FillOp>,
+        ConvertAny<tensor::InsertOp>, ConvertAny<tensor::EmptyOp>,
+        ConvertAny<affine::AffineStoreOp>, ConvertAny<affine::AffineLoadOp>,
+        ConvertAny<affine::AffineForOp>, ConvertAny<affine::AffineYieldOp> >(
         typeConverter, context);
 
     addStructuralConversionPatterns(typeConverter, patterns, target);

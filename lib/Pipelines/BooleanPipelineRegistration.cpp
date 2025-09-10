@@ -62,6 +62,16 @@ void mlirToCGGIPipeline(OpPassManager& pm,
   ::mlir::heir::oneShotBufferize(pm);
 
   // Affine
+  if (options.dataType == Bool) {
+    pm.addNestedPass<FuncOp>(createConvertLinalgToAffineLoopsPass());
+    pm.addNestedPass<FuncOp>(memref::createExpandStridedMetadataPass());
+    pm.addNestedPass<FuncOp>(affine::createAffineExpandIndexOpsPass());
+    pm.addNestedPass<FuncOp>(memref::createExpandOpsPass());
+    pm.addNestedPass<FuncOp>(affine::createSimplifyAffineStructuresPass());
+    pm.addPass(memref::createFoldMemRefAliasOpsPass());
+    pm.addPass(createExpandCopyPass());
+    pm.addPass(createExtractLoopBodyPass());
+  }
   pm.addPass(createInlinerPass());
   pm.addPass(affine::createLoopFusionPass());
   pm.addPass(affine::createAffineScalarReplacementPass());
