@@ -39,8 +39,13 @@ cc_library(
     deps = [
         ":dialect_inc_gen",
         ":ops_inc_gen",
+        "@llvm-project//mlir:ArithDialect",
+        "@llvm-project//mlir:BufferizationDialect",
+        "@llvm-project//mlir:BufferizationInterfaces",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:InferTypeOpInterface",
+        "@llvm-project//mlir:LinalgDialect",
+        "@llvm-project//mlir:MemRefDialect",
     ],
 )
 

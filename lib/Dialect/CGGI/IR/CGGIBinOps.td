@@ -146,3 +146,14 @@ def CGGI_CmpOp : CGGI_Op<"cmp", [
   Note this operations to indirect mirror the TFHE-rs implmementation.
 }];
 }
+
+/***************************
+ * CUSTOM ARITH OPERATIONS *
+ ***************************/
+
+def CGGI_OneHotOp : CGGI_Op<"one_hot", [Pure]> {
+  let arguments = (ins LWECiphertext:$value);
+  let results = (outs LWECiphertextLike:$result);
+  let summary = "High level operation to represent One Hot operation. Note this operations to mirror a custom TFHE-rs implmementation.";
+  let assemblyFormat = "$value attr-dict `:` type($value) `->` type($result)";
+}

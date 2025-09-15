@@ -4,6 +4,7 @@
 include "lib/Dialect/MathExt/IR/MathExtDialect.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
+include "mlir/IR/BuiltinTypes.td"
 include "mlir/IR/OpBase.td"
 
 class MathExt_Op<string mnemonic, list<Trait> traits = []> :
@@ -27,9 +28,9 @@ def MathExt_OneHotOp : MathExt_Op<"one_hot", [Pure]> {
   let description = [{
    Return a tensor of boolean values where only the index corresponding to the input value is true.
   }];
-  let arguments = (ins AnyInteger:$value);
-  let results = (outs AnyRankedTensor:$result);
-   let assemblyFormat = "$value attr-dict `:` type($value) `->` type($result)";
+  let arguments = (ins Builtin_Integer:$value);
+  let results = (outs Builtin_RankedTensor:$result);
+  let assemblyFormat = "$value attr-dict `:` type($value) `->` type($result)";
 }
 
 
