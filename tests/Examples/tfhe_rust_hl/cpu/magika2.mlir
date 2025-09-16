@@ -29,9 +29,12 @@ module {
     %c0_i2 = arith.constant 0 : i2
     %c-1_i2 = arith.constant -1: i2
 
+    %c0 = arith.constant 0 : index
+    %c64 = arith.constant 64 : index
+    %c1 = arith.constant 1 : index  // The step value
 
     %one_out_init = tensor.empty() : tensor<64x257xi1>
-    %one_hot = affine.for %i = 0 to 64 iter_args(%out_iter = %one_out_init) -> tensor<64x257xi1> {
+    %one_hot = scf.for %i = %c0 to %c64 step %c1 iter_args(%out_iter = %one_out_init) -> tensor<64x257xi1> {
 
       %scalar_in = tensor.extract %arg0[%i] : tensor<64xi8>
       %one_hot_slice = math_ext.one_hot %scalar_in : i8 -> tensor<257xi1>
@@ -39,7 +42,7 @@ module {
       %updated_out = tensor.insert_slice %one_hot_slice into %out_iter[%i, 0] [1, 257] [1, 1]
         : tensor<257xi1> into tensor<64x257xi1>
 
-      affine.yield %updated_out : tensor<64x257xi1>
+      scf.yield %updated_out : tensor<64x257xi1>
     }
 
 
