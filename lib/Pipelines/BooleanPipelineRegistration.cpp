@@ -113,29 +113,29 @@ void mlirToCGGIPipeline(OpPassManager& pm,
       pm.addPass(createYosysOptimizer(yosysFilesPath, abcPath, options.abcFast,
                                       options.unrollFactor,
                                       options.useSubmodules, options.mode));
-      // // Cleanup
-      // pm.addPass(mlir::createCSEPass());
-      // pm.addPass(createCanonicalizerPass());
-      // pm.addPass(createFoldConstantTensors());
-      // pm.addPass(createSCCPPass());
-      // pm.addPass(createSymbolDCEPass());
+      // Cleanup
+      pm.addPass(mlir::createCSEPass());
+      pm.addPass(createCanonicalizerPass());
+      pm.addPass(createFoldConstantTensors());
+      pm.addPass(createSCCPPass());
+      pm.addPass(createSymbolDCEPass());
 
-      // // Lower combinational circuit to CGGI
-      // pm.addPass(secret::createSecretDistributeGeneric());
-      // pm.addPass(createCanonicalizerPass());
-      // pm.addPass(createSecretToCGGI());
+      // Lower combinational circuit to CGGI
+      pm.addPass(secret::createSecretDistributeGeneric());
+      pm.addPass(createCanonicalizerPass());
+      pm.addPass(createSecretToCGGI());
       break;
     case Integer:
       pm.addPass(arith::createArithToCGGI());
       break;
   }
   // Cleanup SecretToCGGI
-  // pm.addPass(createCanonicalizerPass());
-  // pm.addPass(createLinalgCanonicalizations());
-  // pm.addPass(createForwardInsertToExtract());
-  // pm.addPass(createFoldConstantTensors());
-  // pm.addPass(createCSEPass());
-  // pm.addPass(createSCCPPass());
+  pm.addPass(createCanonicalizerPass());
+  pm.addPass(createLinalgCanonicalizations());
+  pm.addPass(createForwardInsertToExtract());
+  pm.addPass(createFoldConstantTensors());
+  pm.addPass(createCSEPass());
+  pm.addPass(createSCCPPass());
 }
 #else
 CGGIPipelineBuilder mlirToCGGIPipelineBuilder() {
