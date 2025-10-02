@@ -626,14 +626,14 @@ LogicalResult TfheRustEmitter::printOperation(tensor::FromElementsOp op) {
 
   std::string valuelist =
       commaSeparatedValues(op.getOperands(), [&](Value value) {
-        // Check if block argument, if so, clone.
-        const auto* cloneStr = "";
-        if (isa<BlockArgument>(value)) {
-          cloneStr = ".clone()";
-        } else if (isa<tensor::ExtractOp>(value.getDefiningOp())) {
-          cloneStr = ".clone()";
-        }
-        return variableNames->getNameForValue(value) + cloneStr;
+        // // Check if block argument, if so, clone.
+        // const auto* cloneStr = "";
+        // if (isa<BlockArgument>(value)) {
+        //   cloneStr = ".clone()";
+        // } else if (isa<tensor::ExtractOp>(value.getDefiningOp())) {
+        //   cloneStr = ".clone()";
+        // }
+        return variableNames->getNameForValue(value) + ".clone()";
       });
 
   for (unsigned _dim : llvm::reverse(resultType.getShape())) {
