@@ -331,6 +331,21 @@ LogicalResult TfheRustHLEmitter::printOperation(CreateTrivialOp op) {
   return success();
 }
 
+// MAP TO FOLD LOOP!
+// fn main() {
+//     println!("Hello, world!");
+
+//     let k = (0..4).fold(9, |acc, i| {
+//         let tmp = acc + (i * i); // Return the next accumulator value
+//         println!("{}",tmp);
+//         tmp
+
+//     });
+
+//     println!("{}",k);
+
+// }
+
 LogicalResult TfheRustHLEmitter::printOperation(affine::AffineForOp op) {
   if (op.getStepAsInt() > 1) {
     return op.emitOpError() << "AffineForOp has step > 1";
@@ -625,66 +640,83 @@ LogicalResult TfheRustHLEmitter::printOperation(affine::AffineLoadOp op) {
 
 // Use a BTreeMap<(usize, ...), Ciphertext>.
 LogicalResult TfheRustHLEmitter::printOperation(tensor::EmptyOp op) {
-  os << "let mut " << variableNames->getNameForValue(op.getResult())
-     << " : BTreeMap<("
-     << std::accumulate(
-            std::next(op.getType().getShape().begin()),
-            op.getType().getShape().end(), std::string("usize"),
-            [&](const std::string& a, int64_t value) { return a + ", usize"; })
-     << "), ";
-  if (failed(emitType(op.getType().getElementType()))) {
-    return op.emitOpError() << "Failed to get memref element type";
-  }
-  os << "> = BTreeMap::new();\n";
+  os << "let mut " << variableNames->getNameForValue(op.getResult()) << " : "
+     << convertType(op.getType()).value() << ";\n";
+
+  // std::string res = "0u8";
+  // for (unsigned dim : llvm::reverse(type.getShape())) {
+  //   res = llvm::formatv("[{0}; {1}]", res, dim);
+  // }
 
   return success();
 }
 
 // Produces a &Ciphertext
 LogicalResult TfheRustHLEmitter::printOperation(tensor::ExtractOp op) {
-  // We assume here that the indices are SSA values (not integer attributes).
   emitAssignPrefix(op.getResult());
-  os << "&" << variableNames->getNameForValue(op.getTensor()) << "["
-     << commaSeparatedValues(
+  os << "&" << variableNames->getNameForValue(op.getTensor())
+     << bracketEnclosedValues(
             op.getIndices(),
             [&](Value value) { return variableNames->getNameForValue(value); })
-     << "];\n";
+     << ";\n";
+
   return success();
 }
 
 // Need to produce a Vec<&Ciphertext>
 LogicalResult TfheRustHLEmitter::printOperation(tensor::FromElementsOp op) {
+  auto resultType = op.getResult().getType();
+  std::string res = convertType(resultType).value();
+
   emitAssignPrefix(op.getResult());
-  os << "vec![" << commaSeparatedValues(op.getOperands(), [&](Value value) {
-    // Check if block argument, if so, clone.
-    const auto* cloneStr = isa<BlockArgument>(value) ? ".clone()" : "";
-    // Get the name of defining operation its dialect
-    auto tfheOp =
-        value.getDefiningOp()->getDialect()->getNamespace() == "tfhe_rust";
-    const auto* prefix = tfheOp ? "&" : "";
-    return std::string(prefix) + variableNames->getNameForValue(value) +
-           cloneStr;
-  }) << "];\n";
+
+  std::string valueList;
+
+  for (int i = 0; i < op.getNumOperands(); i++) {
+    valueList = llvm::formatv("{0}{1}.clone()", valueList,
+                              variableNames->getNameForValue(op.getOperand(i)));
+
+    if (i != op->getNumOperands() - 1) {
+      valueList = llvm::formatv("{0}, ", valueList);
+    }
+  }
+
+  for (int i = 0; i < op.getResult().getType().getShape().size(); i++) {
+    valueList = llvm::formatv("[{0}]", valueList);
+  }
+
+  os << valueList << ";\n";
   return success();
 }
 
 // Does not need to produce a value
 LogicalResult TfheRustHLEmitter::printOperation(tensor::InsertOp op) {
   emitAssignPrefix(op.getResult());
-  os << "vec![" << commaSeparatedValues(op.getOperands(), [&](Value value) {
-    // Check if block argument, if so, clone.
-    const auto* cloneStr = isa<BlockArgument>(value) ? ".clone()" : "";
-    // Get the name of defining operation its dialect
 
-    bool tfheOp = false;
-    if (auto* defOp = value.getDefiningOp()) {
-      tfheOp = isa<TfheRustDialect>(defOp->getDialect());
-    }
+  auto getIndices = op.getIndices();
+  // auto element = op.getElement();
+  auto tensor = op.getDest();
 
-    const auto* prefix = tfheOp ? "&" : "";
-    return std::string(prefix) + variableNames->getNameForValue(value) +
-           cloneStr;
-  }) << "];\n";
+  os << variableNames->getNameForValue(getIndices[0]) << "\t"
+     << variableNames->getNameForValue(op.getScalar()) << "\t"
+     << variableNames->getNameForValue(tensor) << "\n";
+  //  << variableNames->getNameForValue(op.getScalar()) << "\n";
+
+  // os << "vec![" << commaSeparatedValues(op.getOperands(), [&](Value
+  // value) {
+  //   // Check if block argument, if so, clone.
+  //   const auto* cloneStr = isa<BlockArgument>(value) ? ".clone()" : "";
+  //   // Get the name of defining operation its dialect
+
+  //   bool tfheOp = false;
+  //   if (auto* defOp = value.getDefiningOp()) {
+  //     tfheOp = isa<TfheRustDialect>(defOp->getDialect());
+  //   }
+
+  //   const auto* prefix = tfheOp ? "&" : "";
+  //   return std::string(prefix) + variableNames->getNameForValue(value) +
+  //          cloneStr;
+  // }) << "];\n";
 
   return success();
 }
@@ -752,7 +784,11 @@ FailureOr<std::string> TfheRustHLEmitter::convertType(Type type) {
             // Tensor types are emitted as vectors
             auto elementTy = convertType(type.getElementType());
             if (failed(elementTy)) return failure();
-            return std::string("Vec<" + elementTy.value() + ">");
+            std::string res = elementTy.value();
+            for (unsigned dim : llvm::reverse(type.getShape())) {
+              res = llvm::formatv("[{0}; {1}]", res, dim);
+            }
+            return res;
           })
       .Case<MemRefType>([&](MemRefType type) -> FailureOr<std::string> {
         // MemRef types are emitted as arrays

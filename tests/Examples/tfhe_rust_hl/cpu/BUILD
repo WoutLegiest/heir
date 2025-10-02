@@ -19,7 +19,6 @@ tfhe_rs_end_to_end_test(
     ],
     heir_translate_flags = ["--emit-tfhe-rust-hl"],
     mlir_src = "fully_connected.mlir",
-    tags = ["manual"],
     test_src = "src/main_fully_connected.rs",
 )
 
