@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -122,14 +123,14 @@ TEST(InterpreterTest, TestElementwiseAdd) {
   )mlir");
   Interpreter interpreter(module.get());
   std::string entryFunction = "main";
-  std::vector<int> a = {1, 2, 3};
-  std::vector<int> b = {2, 3, 4};
-  std::vector<int> expected = {3, 5, 7};
+  std::vector<int64_t> a = {1, 2, 3};
+  std::vector<int64_t> b = {2, 3, 4};
+  std::vector<int64_t> expected = {3, 5, 7};
   std::vector<TypedCppValue> inputs = {TypedCppValue(a), TypedCppValue(b)};
   std::vector<TypedCppValue> results =
       interpreter.interpret(entryFunction, inputs);
   EXPECT_EQ(results.size(), 1);
-  EXPECT_EQ(*std::get<std::shared_ptr<std::vector<int>>>(results[0].value),
+  EXPECT_EQ(*std::get<std::shared_ptr<std::vector<int64_t>>>(results[0].value),
             expected);
 }
 
@@ -314,7 +315,7 @@ TEST(InterpreterTest, TestTensorSplat) {
   std::vector<TypedCppValue> results =
       interpreter.interpret(entryFunction, inputs);
   EXPECT_EQ(results.size(), 1);
-  auto vec = *std::get<std::shared_ptr<std::vector<int>>>(results[0].value);
+  auto vec = *std::get<std::shared_ptr<std::vector<int64_t>>>(results[0].value);
   EXPECT_EQ(vec.size(), 4);
   EXPECT_EQ(vec[0], 42);
   EXPECT_EQ(vec[1], 42);
@@ -340,7 +341,7 @@ TEST(InterpreterTest, TestTensorFromElements) {
   std::vector<TypedCppValue> results =
       interpreter.interpret(entryFunction, inputs);
   EXPECT_EQ(results.size(), 1);
-  auto vec = *std::get<std::shared_ptr<std::vector<int>>>(results[0].value);
+  auto vec = *std::get<std::shared_ptr<std::vector<int64_t>>>(results[0].value);
   EXPECT_EQ(vec.size(), 3);
   EXPECT_EQ(vec[0], 10);
   EXPECT_EQ(vec[1], 20);
@@ -389,7 +390,7 @@ TEST(InterpreterTest, TestTensorInsert) {
   std::vector<TypedCppValue> results =
       interpreter.interpret(entryFunction, inputs);
   EXPECT_EQ(results.size(), 1);
-  auto vec = *std::get<std::shared_ptr<std::vector<int>>>(results[0].value);
+  auto vec = *std::get<std::shared_ptr<std::vector<int64_t>>>(results[0].value);
   EXPECT_EQ(vec.size(), 3);
   EXPECT_EQ(vec[1], 99);
 }
@@ -417,7 +418,7 @@ TEST(InterpreterTest, TestLoop) {
   std::vector<TypedCppValue> results =
       interpreter.interpret(entryFunction, inputs);
   EXPECT_EQ(results.size(), 1);
-  auto vec = *std::get<std::shared_ptr<std::vector<int>>>(results[0].value);
+  auto vec = *std::get<std::shared_ptr<std::vector<int64_t>>>(results[0].value);
   EXPECT_EQ(vec.size(), 6);
   EXPECT_EQ(vec[1], 1);
 }
@@ -503,18 +504,8 @@ struct CryptoSetup {
 
 // Common LWE type definitions header for MLIR tests
 static const char* kLWETypesHeader = R"mlir(
-!Z65537 = !mod_arith.int<65537 : i64>
-!Z1095233372161 = !mod_arith.int<1095233372161 : i64>
-!rns_L0 = !rns.rns<!Z1095233372161>
-#ring_pt = #polynomial.ring<coefficientType = !Z65537, polynomialModulus = <1 + x**32>>
-#ring_ct = #polynomial.ring<coefficientType = !rns_L0, polynomialModulus = <1 + x**32>>
-#encoding = #lwe.full_crt_packing_encoding<scaling_factor = 0>
-#key = #lwe.key<>
-#modulus_chain = #lwe.modulus_chain<elements = <1095233372161 : i64>, current = 0>
-#plaintext_space = #lwe.plaintext_space<ring = #ring_pt, encoding = #encoding>
-#ciphertext_space = #lwe.ciphertext_space<ring = #ring_ct, encryption_type = lsb>
-!ct = !lwe.lwe_ciphertext<application_data = <message_type = i32>, plaintext_space = #plaintext_space, ciphertext_space = #ciphertext_space, key = #key, modulus_chain = #modulus_chain>
-!pt = !lwe.lwe_plaintext<application_data = <message_type = i32>, plaintext_space = #plaintext_space>
+!ct = !openfhe.ciphertext
+!pt = !openfhe.plaintext
 )mlir";
 
 TEST(InterpreterTest, TestOpenfheAdd) {
@@ -560,6 +551,161 @@ module {
   EXPECT_EQ(resultVec.size(), vec1.size());
   for (size_t i = 0; i < vec1.size(); i++) {
     EXPECT_EQ(resultVec[i], vec1[i] + vec2[i]);
+  }
+}
+
+TEST(InterpreterTest, TestOpenfheAddInPlace) {
+  CryptoSetup setup;
+
+  // Create plaintexts
+  std::vector<int64_t> vec1 = {1, 2, 3, 4};
+  std::vector<int64_t> vec2 = {5, 6, 7, 8};
+  auto pt1 = setup.cc->MakePackedPlaintext(vec1);
+  auto pt2 = setup.cc->MakePackedPlaintext(vec2);
+
+  // Encrypt
+  auto ct1 = setup.cc->Encrypt(setup.keyPair.publicKey, pt1);
+  auto ct2 = setup.cc->Encrypt(setup.keyPair.publicKey, pt2);
+
+  // Test via interpreter
+  MLIRContext context;
+  initContext(context);
+  std::string mlirStr = std::string(kLWETypesHeader) + R"mlir(
+module {
+  func.func @main(%cc: !openfhe.crypto_context, %ct1: !ct, %ct2: !ct) -> !ct {
+    %result = openfhe.add_inplace %cc, %ct1, %ct2 : (!openfhe.crypto_context, !ct, !ct) -> !ct
+    return %result : !ct
+  }
+}
+)mlir";
+  auto module = parse(&context, mlirStr);
+
+  Interpreter interpreter(module.get());
+  std::vector<TypedCppValue> inputs = {TypedCppValue(setup.cc),
+                                       TypedCppValue(ct1), TypedCppValue(ct2)};
+  std::vector<TypedCppValue> results = interpreter.interpret("main", inputs);
+
+  EXPECT_EQ(results.size(), 1);
+  auto resultCt = std::get<CiphertextT>(results[0].value);
+
+  // Decrypt and verify
+  Plaintext resultPt;
+  setup.cc->Decrypt(setup.keyPair.secretKey, resultCt, &resultPt);
+  resultPt->SetLength(vec1.size());
+
+  auto resultVec = resultPt->GetPackedValue();
+  EXPECT_EQ(resultVec.size(), vec1.size());
+  for (size_t i = 0; i < vec1.size(); i++) {
+    EXPECT_EQ(resultVec[i], vec1[i] + vec2[i]);
+  }
+}
+
+TEST(InterpreterTest, TestOpenfheSubInPlace) {
+  CryptoSetup setup;
+
+  std::vector<int64_t> vec1 = {10, 20, 30, 40};
+  std::vector<int64_t> vec2 = {3, 5, 7, 9};
+  auto pt1 = setup.cc->MakePackedPlaintext(vec1);
+  auto pt2 = setup.cc->MakePackedPlaintext(vec2);
+
+  auto ct1 = setup.cc->Encrypt(setup.keyPair.publicKey, pt1);
+  auto ct2 = setup.cc->Encrypt(setup.keyPair.publicKey, pt2);
+
+  MLIRContext context;
+  initContext(context);
+  std::string mlirStr = std::string(kLWETypesHeader) + R"mlir(
+module {
+      func.func @main(%cc: !openfhe.crypto_context, %ct1: !ct, %ct2: !ct) -> !ct {
+        %result = openfhe.sub_inplace %cc, %ct1, %ct2 : (!openfhe.crypto_context, !ct, !ct) -> !ct
+        return %result : !ct
+      }
+}
+)mlir";
+  auto module = parse(&context, mlirStr);
+
+  Interpreter interpreter(module.get());
+  std::vector<TypedCppValue> inputs = {TypedCppValue(setup.cc),
+                                       TypedCppValue(ct1), TypedCppValue(ct2)};
+  std::vector<TypedCppValue> results = interpreter.interpret("main", inputs);
+
+  auto resultCt = std::get<CiphertextT>(results[0].value);
+  Plaintext resultPt;
+  setup.cc->Decrypt(setup.keyPair.secretKey, resultCt, &resultPt);
+  resultPt->SetLength(vec1.size());
+
+  auto resultVec = resultPt->GetPackedValue();
+  for (size_t i = 0; i < vec1.size(); i++) {
+    EXPECT_EQ(resultVec[i], vec1[i] - vec2[i]);
+  }
+}
+
+TEST(InterpreterTest, TestOpenfheNegateInPlace) {
+  CryptoSetup setup;
+
+  std::vector<int64_t> vec = {5, 10, 15, 20};
+  auto pt = setup.cc->MakePackedPlaintext(vec);
+  auto ct = setup.cc->Encrypt(setup.keyPair.publicKey, pt);
+
+  MLIRContext context;
+  initContext(context);
+  std::string mlirStr = std::string(kLWETypesHeader) + R"mlir(
+module {
+      func.func @main(%cc: !openfhe.crypto_context, %ct: !ct) -> !ct {
+        %result = openfhe.negate_inplace %cc, %ct : (!openfhe.crypto_context, !ct) -> !ct
+        return %result : !ct
+      }
+}
+)mlir";
+  auto module = parse(&context, mlirStr);
+
+  Interpreter interpreter(module.get());
+  std::vector<TypedCppValue> inputs = {TypedCppValue(setup.cc),
+                                       TypedCppValue(ct)};
+  std::vector<TypedCppValue> results = interpreter.interpret("main", inputs);
+
+  auto resultCt = std::get<CiphertextT>(results[0].value);
+  Plaintext resultPt;
+  setup.cc->Decrypt(setup.keyPair.secretKey, resultCt, &resultPt);
+  resultPt->SetLength(vec.size());
+
+  auto resultVec = resultPt->GetPackedValue();
+  for (size_t i = 0; i < vec.size(); i++) {
+    EXPECT_EQ(resultVec[i], -vec[i]);
+  }
+}
+
+TEST(InterpreterTest, TestOpenfheSquareInPlace) {
+  CryptoSetup setup(2);  // Need depth for squaring
+
+  std::vector<int64_t> vec = {2, 3, 4, 5};
+  auto pt = setup.cc->MakePackedPlaintext(vec);
+  auto ct = setup.cc->Encrypt(setup.keyPair.publicKey, pt);
+
+  MLIRContext context;
+  initContext(context);
+  std::string mlirStr = std::string(kLWETypesHeader) + R"mlir(
+module {
+      func.func @main(%cc: !openfhe.crypto_context, %ct: !ct) -> !ct {
+        %result = openfhe.square_inplace %cc, %ct : (!openfhe.crypto_context, !ct) -> !ct
+        return %result : !ct
+      }
+}
+)mlir";
+  auto module = parse(&context, mlirStr);
+
+  Interpreter interpreter(module.get());
+  std::vector<TypedCppValue> inputs = {TypedCppValue(setup.cc),
+                                       TypedCppValue(ct)};
+  std::vector<TypedCppValue> results = interpreter.interpret("main", inputs);
+
+  auto resultCt = std::get<CiphertextT>(results[0].value);
+  Plaintext resultPt;
+  setup.cc->Decrypt(setup.keyPair.secretKey, resultCt, &resultPt);
+  resultPt->SetLength(vec.size());
+
+  auto resultVec = resultPt->GetPackedValue();
+  for (size_t i = 0; i < vec.size(); i++) {
+    EXPECT_EQ(resultVec[i], vec[i] * vec[i]);
   }
 }
 
@@ -759,6 +905,7 @@ TEST(InterpreterTest, TestOpenfheRot) {
   // Cyclically replicate the vector to fill the slots
   std::vector<int64_t> replicatedVec;
   int64_t numSlots = setup.cc->GetRingDimension() / 2;
+  replicatedVec.reserve(numSlots);
   for (int i = 0; i < numSlots; i++)
     replicatedVec.push_back(vec[i % vec.size()]);
 
@@ -812,7 +959,7 @@ module {
 
   Interpreter interpreter(module.get());
 
-  std::vector<int> vec = {10, 20, 30, 40};
+  std::vector<int64_t> vec = {10, 20, 30, 40};
   std::vector<TypedCppValue> inputs = {TypedCppValue(setup.cc),
                                        TypedCppValue(vec)};
   std::vector<TypedCppValue> results = interpreter.interpret("main", inputs);
@@ -874,7 +1021,7 @@ TEST(InterpreterTest, TestOpenfheRLWEDecodeBGVScalar) {
   std::string mlirStr = std::string(kLWETypesHeader) + R"mlir(
 module attributes {scheme.bgv} {
   func.func @main(%pt: !pt) -> i32 {
-    %result = lwe.rlwe_decode %pt {encoding = #encoding, ring = #ring_pt} : !pt -> i32
+    %result = openfhe.decode %pt : !pt -> i32
     return %result : i32
   }
 }
@@ -900,7 +1047,7 @@ TEST(InterpreterTest, TestOpenfheRLWEDecodeBGVTensor) {
   std::string mlirStr = std::string(kLWETypesHeader) + R"mlir(
 module attributes {scheme.bgv} {
   func.func @main(%pt: !pt) -> tensor<8xi32> {
-    %result = lwe.rlwe_decode %pt {encoding = #encoding, ring = #ring_pt} : !pt -> tensor<8xi32>
+    %result = openfhe.decode %pt : !pt -> tensor<8xi32>
     return %result : tensor<8xi32>
   }
 }
@@ -913,7 +1060,7 @@ module attributes {scheme.bgv} {
 
   EXPECT_EQ(results.size(), 1);
   auto resultVec =
-      *std::get<std::shared_ptr<std::vector<int>>>(results[0].value);
+      *std::get<std::shared_ptr<std::vector<int64_t>>>(results[0].value);
   EXPECT_EQ(resultVec.size(), vec.size());
   for (size_t i = 0; i < vec.size(); i++) {
     EXPECT_EQ(resultVec[i], vec[i]);
@@ -950,19 +1097,11 @@ TEST(InterpreterTest, TestOpenfheRLWEDecodeCKKSScalar) {
   MLIRContext context;
   initContext(context);
   std::string mlirStr = R"mlir(
-!Z65537 = !mod_arith.int<65537 : i64>
-!Z1095233372161 = !mod_arith.int<1095233372161 : i64>
-!rns_L0 = !rns.rns<!Z1095233372161>
-#ring_pt = #polynomial.ring<coefficientType = !Z65537, polynomialModulus = <1 + x**32>>
-#ckks_encoding = #lwe.inverse_canonical_encoding<scaling_factor = 0>
-#key = #lwe.key<>
-#modulus_chain = #lwe.modulus_chain<elements = <1095233372161 : i64>, current = 0>
-#plaintext_space = #lwe.plaintext_space<ring = #ring_pt, encoding = #ckks_encoding>
-!pt = !lwe.lwe_plaintext<application_data = <message_type = f32>, plaintext_space = #plaintext_space>
+!pt = !openfhe.plaintext
 
 module attributes {scheme.ckks} {
   func.func @main(%pt: !pt) -> f32 {
-    %result = lwe.rlwe_decode %pt {encoding = #ckks_encoding, ring = #ring_pt} : !pt -> f32
+    %result = openfhe.decode_ckks %pt : !pt -> f32
     return %result : f32
   }
 }
@@ -987,19 +1126,11 @@ TEST(InterpreterTest, TestOpenfheRLWEDecodeCKKSTensor) {
   MLIRContext context;
   initContext(context);
   std::string mlirStr = R"mlir(
-!Z65537 = !mod_arith.int<65537 : i64>
-!Z1095233372161 = !mod_arith.int<1095233372161 : i64>
-!rns_L0 = !rns.rns<!Z1095233372161>
-#ring_pt = #polynomial.ring<coefficientType = !Z65537, polynomialModulus = <1 + x**32>>
-#ckks_encoding = #lwe.inverse_canonical_encoding<scaling_factor = 0>
-#key = #lwe.key<>
-#modulus_chain = #lwe.modulus_chain<elements = <1095233372161 : i64>, current = 0>
-#plaintext_space = #lwe.plaintext_space<ring = #ring_pt, encoding = #ckks_encoding>
-!pt = !lwe.lwe_plaintext<application_data = <message_type = tensor<8xf32>>, plaintext_space = #plaintext_space>
+!pt = !openfhe.plaintext
 
 module attributes {scheme.ckks} {
   func.func @main(%pt: !pt) -> tensor<8xf32> {
-    %result = lwe.rlwe_decode %pt {encoding = #ckks_encoding, ring = #ring_pt} : !pt -> tensor<8xf32>
+    %result = openfhe.decode_ckks %pt : !pt -> tensor<8xf32>
     return %result : tensor<8xf32>
   }
 }
@@ -1186,19 +1317,11 @@ TEST(InterpreterTest, TestOpenfheRLWEDecodeCKKSScalarDouble) {
   MLIRContext context;
   initContext(context);
   std::string mlirStr = R"mlir(
-!Z65537 = !mod_arith.int<65537 : i64>
-!Z1095233372161 = !mod_arith.int<1095233372161 : i64>
-!rns_L0 = !rns.rns<!Z1095233372161>
-#ring_pt = #polynomial.ring<coefficientType = !Z65537, polynomialModulus = <1 + x**32>>
-#ckks_encoding = #lwe.inverse_canonical_encoding<scaling_factor = 0>
-#key = #lwe.key<>
-#modulus_chain = #lwe.modulus_chain<elements = <1095233372161 : i64>, current = 0>
-#plaintext_space = #lwe.plaintext_space<ring = #ring_pt, encoding = #ckks_encoding>
-!pt = !lwe.lwe_plaintext<application_data = <message_type = f64>, plaintext_space = #plaintext_space>
+!pt = !openfhe.plaintext
 
 module attributes {scheme.ckks} {
   func.func @main(%pt: !pt) -> f64 {
-    %result = lwe.rlwe_decode %pt {encoding = #ckks_encoding, ring = #ring_pt} : !pt -> f64
+    %result = openfhe.decode_ckks %pt : !pt -> f64
     return %result : f64
   }
 }
@@ -1223,19 +1346,11 @@ TEST(InterpreterTest, TestOpenfheRLWEDecodeCKKSTensorDouble) {
   MLIRContext context;
   initContext(context);
   std::string mlirStr = R"mlir(
-!Z65537 = !mod_arith.int<65537 : i64>
-!Z1095233372161 = !mod_arith.int<1095233372161 : i64>
-!rns_L0 = !rns.rns<!Z1095233372161>
-#ring_pt = #polynomial.ring<coefficientType = !Z65537, polynomialModulus = <1 + x**32>>
-#ckks_encoding = #lwe.inverse_canonical_encoding<scaling_factor = 0>
-#key = #lwe.key<>
-#modulus_chain = #lwe.modulus_chain<elements = <1095233372161 : i64>, current = 0>
-#plaintext_space = #lwe.plaintext_space<ring = #ring_pt, encoding = #ckks_encoding>
-!pt = !lwe.lwe_plaintext<application_data = <message_type = tensor<8xf64>>, plaintext_space = #plaintext_space>
+!pt = !openfhe.plaintext
 
 module attributes {scheme.ckks} {
   func.func @main(%pt: !pt) -> tensor<8xf64> {
-    %result = lwe.rlwe_decode %pt {encoding = #ckks_encoding, ring = #ring_pt} : !pt -> tensor<8xf64>
+    %result = openfhe.decode_ckks %pt : !pt -> tensor<8xf64>
     return %result : tensor<8xf64>
   }
 }
@@ -1252,6 +1367,83 @@ module attributes {scheme.ckks} {
   EXPECT_EQ(resultVec.size(), vec.size());
   for (size_t i = 0; i < vec.size(); i++) {
     EXPECT_NEAR(resultVec[i], vec[i], 0.01);
+  }
+}
+
+TEST(InterpreterTest, TestOpenfheParallelFastRotation) {
+  CryptoSetup setup;
+
+  // Generate rotation keys
+  setup.cc->EvalRotateKeyGen(setup.keyPair.secretKey, {1, 2, 3, 4});
+
+  std::vector<int64_t> vec = {1, 2, 3, 4, 5, 6, 7, 8};
+  // Cyclically replicate the vector to fill the slots
+  std::vector<int64_t> replicatedVec;
+  int64_t numSlots = setup.cc->GetRingDimension() / 2;
+  replicatedVec.reserve(numSlots);
+  for (int i = 0; i < numSlots; i++)
+    replicatedVec.push_back(vec[i % vec.size()]);
+
+  auto pt = setup.cc->MakePackedPlaintext(replicatedVec);
+  auto ct = setup.cc->Encrypt(setup.keyPair.publicKey, pt);
+
+  std::vector<int64_t> indices = {1, 2, 3, 4};
+
+  MLIRContext context;
+  initContext(context);
+  std::string mlirStr = std::string(kLWETypesHeader) + R"mlir(
+!cc = !openfhe.crypto_context
+!digit_decomp = !openfhe.digit_decomp
+
+module attributes {scheme.ckks} {
+  func.func @main(%cc: !cc, %ct: !ct, %indices: tensor<4xindex>) -> tensor<4x!ct> {
+    %digit_decomp = openfhe.fast_rotation_precompute %cc, %ct : (!cc, !ct) -> !digit_decomp
+    %0 = tensor.empty() : tensor<4x!ct>
+    %1 = scf.forall (%arg0) in (4) shared_outs(%arg1 = %0) -> (tensor<4x!ct>) {
+      %extracted_9 = tensor.extract %indices[%arg0] : tensor<4xindex>
+      %ct_10 = openfhe.fast_rotation %cc, %ct, %extracted_9, %digit_decomp {cyclotomicOrder = 64 : index} : (!cc, !ct, index, !digit_decomp) -> !ct
+      %from_elements_11 = tensor.from_elements %ct_10 : tensor<1x!ct>
+      scf.forall.in_parallel {
+        tensor.parallel_insert_slice %from_elements_11 into %arg1[%arg0] [1] [1] : tensor<1x!ct> into tensor<4x!ct>
+      }
+    }
+    %c0 = arith.constant 0 : index
+    %extracted = tensor.extract %1[%c0] : tensor<4x!ct>
+    %c1_0 = arith.constant 1 : index
+    %extracted_1 = tensor.extract %1[%c1_0] : tensor<4x!ct>
+    %c2_2 = arith.constant 2 : index
+    %extracted_3 = tensor.extract %1[%c2_2] : tensor<4x!ct>
+    %c3_4 = arith.constant 3 : index
+    %extracted_5 = tensor.extract %1[%c3_4] : tensor<4x!ct>
+    %2 = tensor.from_elements %extracted, %extracted_1, %extracted_3, %extracted_5 : tensor<4x!ct>
+    return %2 : tensor<4x!ct>
+  }
+}
+)mlir";
+  auto module = parse(&context, mlirStr);
+
+  Interpreter interpreter(module.get());
+  std::vector<TypedCppValue> inputs = {
+      TypedCppValue(setup.cc), TypedCppValue(ct), TypedCppValue(indices)};
+  std::vector<TypedCppValue> results = interpreter.interpret("main", inputs);
+
+  EXPECT_EQ(results.size(), 1);
+  auto resultVec =
+      *std::get<std::shared_ptr<std::vector<CiphertextT>>>(results[0].value);
+  EXPECT_EQ(resultVec.size(), 4);
+
+  std::vector<std::vector<int64_t>> expected = {{2, 3, 4, 5, 6, 7, 8, 1},
+                                                {3, 4, 5, 6, 7, 8, 1, 2},
+                                                {4, 5, 6, 7, 8, 1, 2, 3},
+                                                {5, 6, 7, 8, 1, 2, 3, 4}};
+  for (int i = 0; i < 4; i++) {
+    // Decrypt and verify
+    Plaintext resultPt;
+    setup.cc->Decrypt(setup.keyPair.secretKey, resultVec[i], &resultPt);
+    resultPt->SetLength(vec.size());
+    auto resultVec = resultPt->GetPackedValue();
+    EXPECT_EQ(resultVec.size(), vec.size());
+    EXPECT_EQ(resultVec, expected[i]);
   }
 }
 

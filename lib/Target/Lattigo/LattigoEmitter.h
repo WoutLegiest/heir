@@ -8,7 +8,7 @@
 
 #include "lib/Analysis/SelectVariableNames/SelectVariableNames.h"
 #include "lib/Dialect/Lattigo/IR/LattigoOps.h"
-#include "lib/Utils/Tablegen/InplaceOpInterface.h"
+#include "lib/Utils/Tablegen/InPlaceOpInterface.h"
 #include "lib/Utils/TargetUtils.h"
 #include "llvm/include/llvm/Support/raw_ostream.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Affine/IR/AffineOps.h"  // from @llvm-project
@@ -146,8 +146,11 @@ class LattigoEmitter {
   LogicalResult printOperation(BGVRotateRowsOp op);
   // CKKS
   LogicalResult printOperation(CKKSNewParametersFromLiteralOp op);
+  LogicalResult printOperation(CKKSNewBootstrappingParametersFromLiteralOp op);
+  LogicalResult printOperation(CKKSGenEvaluationKeysBootstrappingOp op);
   LogicalResult printOperation(CKKSNewEncoderOp op);
   LogicalResult printOperation(CKKSNewEvaluatorOp op);
+  LogicalResult printOperation(CKKSNewBootstrappingEvaluatorOp op);
   LogicalResult printOperation(CKKSNewPlaintextOp op);
   LogicalResult printOperation(CKKSNewPolynomialEvaluatorOp op);
   LogicalResult printOperation(CKKSEncodeOp op);
@@ -163,6 +166,7 @@ class LattigoEmitter {
   LogicalResult printOperation(CKKSMulOp op);
   LogicalResult printOperation(CKKSRelinearizeOp op);
   LogicalResult printOperation(CKKSRescaleOp op);
+  LogicalResult printOperation(CKKSBootstrapOp op);
   LogicalResult printOperation(CKKSRotateOp op);
   LogicalResult printOperation(CKKSLinearTransformOp op);
   LogicalResult printOperation(CKKSChebyshevOp op);
@@ -174,7 +178,7 @@ class LattigoEmitter {
                                ::mlir::ValueRange operands, std::string_view op,
                                bool err);
 
-  LogicalResult printEvalInplaceMethod(::mlir::Value evaluator,
+  LogicalResult printEvalInPlaceMethod(::mlir::Value evaluator,
                                        ::mlir::ValueRange operands,
                                        std::string_view op, bool err);
 
@@ -194,9 +198,9 @@ class LattigoEmitter {
   // find the actual value used for inplace op
   ::mlir::Value getStorageValue(::mlir::Value value) {
     if (auto* op = value.getDefiningOp()) {
-      if (auto inplaceOpInterface = mlir::dyn_cast<InplaceOpInterface>(op)) {
+      if (auto inplaceOpInterface = mlir::dyn_cast<InPlaceOpInterface>(op)) {
         auto inplace =
-            op->getOperand(inplaceOpInterface.getInplaceOperandIndex());
+            op->getOperand(inplaceOpInterface.getInPlaceOperandIndex());
         return getStorageValue(inplace);
       }
     }

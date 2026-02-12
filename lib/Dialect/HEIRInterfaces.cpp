@@ -6,22 +6,64 @@
 
 #include "llvm/include/llvm/ADT/STLExtras.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Affine/IR/AffineOps.h"  // from @llvm-project
-#include "mlir/include/mlir/IR/BuiltinTypes.h"        // from @llvm-project
-#include "mlir/include/mlir/IR/DialectRegistry.h"     // from @llvm-project
-#include "mlir/include/mlir/IR/MLIRContext.h"         // from @llvm-project
-#include "mlir/include/mlir/IR/Operation.h"           // from @llvm-project
-#include "mlir/include/mlir/IR/Types.h"               // from @llvm-project
-#include "mlir/include/mlir/Support/LLVM.h"           // from @llvm-project
-#include "mlir/include/mlir/Support/LogicalResult.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"   // from @llvm-project
+#include "mlir/include/mlir/Dialect/Func/IR/FuncOps.h"  // from @llvm-project
+#include "mlir/include/mlir/IR/BuiltinTypes.h"          // from @llvm-project
+#include "mlir/include/mlir/IR/DialectRegistry.h"       // from @llvm-project
+#include "mlir/include/mlir/IR/MLIRContext.h"           // from @llvm-project
+#include "mlir/include/mlir/IR/Operation.h"             // from @llvm-project
+#include "mlir/include/mlir/IR/Types.h"                 // from @llvm-project
+#include "mlir/include/mlir/Support/LLVM.h"             // from @llvm-project
+#include "mlir/include/mlir/Support/LogicalResult.h"    // from @llvm-project
 
 namespace mlir {
 namespace heir {
 
-#include "lib/Dialect/HEIRInterfaces.cpp.inc"
+#include "lib/Dialect/HEIROpInterfaces.cpp.inc"
+#include "lib/Dialect/HEIRTypeInterfaces.cpp.inc"
+
+using arith::AddFOp;
+using arith::AddIOp;
+using arith::MulFOp;
+using arith::MulIOp;
+using arith::SubFOp;
+using arith::SubIOp;
 
 void registerOperandAndResultAttrInterface(DialectRegistry& registry) {
   registry.addExtension(+[](MLIRContext* ctx, affine::AffineDialect* dialect) {
     affine::AffineForOp::attachInterface<OperandAndResultAttrInterface>(*ctx);
+  });
+  registry.addExtension(+[](MLIRContext* ctx, func::FuncDialect* dialect) {
+    func::CallOp::attachInterface<OperandAndResultAttrInterface>(*ctx);
+  });
+}
+
+void registerIncreasesMulDepthOpInterface(DialectRegistry& registry) {
+  registry.addExtension(+[](MLIRContext* ctx, arith::ArithDialect* dialect) {
+    MulIOp::attachInterface<IncreasesMulDepthOpInterface>(*ctx);
+    MulFOp::attachInterface<IncreasesMulDepthOpInterface>(*ctx);
+  });
+}
+
+namespace {
+template <typename OpTy>
+struct AnyOperandMayBePlaintextImpl
+    : public PlaintextOperandInterface::ExternalModel<
+          AnyOperandMayBePlaintextImpl<OpTy>, OpTy> {
+  SmallVector<unsigned> maybePlaintextOperands(Operation* op) const {
+    return {0, 1};
+  }
+};
+}  // namespace
+
+void registerPlaintextOperandInterface(DialectRegistry& registry) {
+  registry.addExtension(+[](MLIRContext* ctx, arith::ArithDialect* dialect) {
+    MulIOp::attachInterface<AnyOperandMayBePlaintextImpl<MulIOp>>(*ctx);
+    MulFOp::attachInterface<AnyOperandMayBePlaintextImpl<MulFOp>>(*ctx);
+    AddIOp::attachInterface<AnyOperandMayBePlaintextImpl<AddIOp>>(*ctx);
+    AddFOp::attachInterface<AnyOperandMayBePlaintextImpl<AddFOp>>(*ctx);
+    SubIOp::attachInterface<AnyOperandMayBePlaintextImpl<SubIOp>>(*ctx);
+    SubFOp::attachInterface<AnyOperandMayBePlaintextImpl<SubFOp>>(*ctx);
   });
 }
 

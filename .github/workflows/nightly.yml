@@ -16,7 +16,7 @@ jobs:
       labels: ubuntu-24.04-16core
     steps:
       - name: Check out repository code
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # pin@v3
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
 
       - name: Install dependencies
         run: |
@@ -42,7 +42,7 @@ jobs:
             gh release view "nightly" && gh release delete "nightly" -y --cleanup-tag
 
       - name: GH Release
-        uses: softprops/action-gh-release@a74c6b72af54cfa997e81df42d94703d6313a2d0 #pin@v2.0.6
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b  # v2
         with:
           prerelease: true
           tag_name: nightly
@@ -51,4 +51,5 @@ jobs:
             bazel-bin/tools/heir-translate
             bazel-bin/tools/heir-lsp
             bazel-bin/external/edu_berkeley_abc/abc
-            lib/Transforms/YosysOptimizer/yosys/techmap.v
+            lib/Transforms/YosysOptimizer/yosys/techmap_lut3.v
+            lib/Transforms/YosysOptimizer/yosys/techmap_lut4.v

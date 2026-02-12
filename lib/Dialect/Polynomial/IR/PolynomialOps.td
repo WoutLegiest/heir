@@ -396,28 +396,38 @@ def Polynomial_EvalOp : Polynomial_Op<"eval", [AllTypesMatch<["value", "output"]
   let hasVerifier = 1;
 }
 
-def Polynomial_KeySwitchInnerOp : Polynomial_Op<"key_switch_inner",
-    [AllTypesMatch<["value", "constantOutput", "linearOutput"]>]> {
-  let summary = "Key switch on an RNS polynomial component";
+def Polynomial_ExtractSliceOp : Polynomial_Op<"extract_slice", [Pure, DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>]> {
+  let summary = "Extract a subset of the polynomial's RNS basis";
   let description = [{
-    Generates a linear ciphertext that, when added to a ciphertext encrypted
-    under the input key, switches it to a ciphertext encrypted under the output
-    key.
+    Given a polynomial with RNS coefficients with $k$ basis types (limbs), extract the slice of
+    RNS components for each coefficient, starting at `start` and having size `size`.
 
-    This operation is intended to be an internal implementation detail of
-    higher-level ciphertext operations such as `ckks.relinearize`, isolated
-    here for reuse among multiple op lowerings.
+    The result type is a polynomial with RNS type containing the subset of basis types
+    corresponding to the extracted slice. This is useful for operations like
+    truncating or partitioning a modulus chain.
   }];
-  let arguments = (ins
-      Polynomial_PolynomialType:$value,
-      RankedTensorOf<[Polynomial_PolynomialType]>: $keySwitchingKey
-  );
-  let results = (outs
-    Polynomial_PolynomialType:$constantOutput,
-    Polynomial_PolynomialType:$linearOutput
-  );
+  let arguments = (ins Polynomial_PolynomialType:$input, IndexAttr:$start, IndexAttr:$size);
+  let results = (outs Polynomial_PolynomialType:$output);
+  let assemblyFormat = "$input attr-dict `:` type($input)";
   let hasVerifier = 1;
 }
 
+def Polynomial_ConvertBasisOp : Polynomial_Op<"convert_basis", [Pure, DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>]> {
+  let summary = "Change a polynomial's RNS basis";
+  let description = [{
+    Given a polynomial with RNS coefficients, output a polynomial where the coefficients
+    have the target output basis. The output value of each coefficient is equivalent to
+    lifting the coefficient to its centered representative over the integers, and reducing
+    by the output modulus.
+  }];
+  let arguments = (ins
+      Polynomial_PolynomialType:$value,
+      TypeAttr:$targetBasis
+  );
+  let results = (outs
+    Polynomial_PolynomialType:$output
+  );
+  let assemblyFormat = "$value attr-dict `:` type($value)";
+}
 
 #endif  // LIB_DIALECT_POLYNOMIAL_IR_POLYNOMIALOPS_TD_

@@ -243,9 +243,8 @@ void addTensorOfTensorConversionPatterns(TypeConverter& typeConverter,
   target.addDynamicallyLegalDialect<affine::AffineDialect>(
       [&](Operation* op) { return typeConverter.isLegal(op); });
 
-  patterns
-      .add<ConvertAny<>, ConvertExtract, ConvertInsert, ConvertFromElements>(
-          typeConverter, patterns.getContext());
+  patterns.add<ConvertExtract, ConvertInsert, ConvertFromElements>(
+      typeConverter, patterns.getContext());
 }
 
 void addStructuralConversionPatterns(TypeConverter& typeConverter,
@@ -269,6 +268,12 @@ void addStructuralConversionPatterns(TypeConverter& typeConverter,
   populateBranchOpInterfaceTypeConversionPattern(patterns, typeConverter);
   scf::populateSCFStructuralTypeConversionsAndLegality(typeConverter, patterns,
                                                        target);
+
+  target.addDynamicallyLegalOp<affine::AffineForOp, affine::AffineYieldOp>(
+      [&](Operation* op) { return typeConverter.isLegal(op); });
+  patterns
+      .add<ConvertAny<affine::AffineForOp>, ConvertAny<affine::AffineYieldOp>>(
+          typeConverter, patterns.getContext());
 
   target.markUnknownOpDynamicallyLegal([&](Operation* op) {
     // These rules are needed to handle interface ops that are not directly

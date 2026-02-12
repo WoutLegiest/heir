@@ -8,8 +8,9 @@
 #include "lib/Dialect/LWE/Conversions/LWEToLattigo/LWEToLattigo.h"
 #include "lib/Dialect/LWE/Conversions/LWEToOpenfhe/LWEToOpenfhe.h"
 #include "lib/Dialect/LWE/Transforms/AddDebugPort.h"
-#include "lib/Dialect/Lattigo/Transforms/AllocToInplace.h"
+#include "lib/Dialect/Lattigo/Transforms/AllocToInPlace.h"
 #include "lib/Dialect/Lattigo/Transforms/ConfigureCryptoContext.h"
+#include "lib/Dialect/Openfhe/Transforms/AllocToInPlace.h"
 #include "lib/Dialect/Openfhe/Transforms/ConfigureCryptoContext.h"
 #include "lib/Dialect/Openfhe/Transforms/CountAddAndKeySwitch.h"
 #include "lib/Dialect/Openfhe/Transforms/FastRotationPrecompute.h"
@@ -30,6 +31,7 @@
 #include "lib/Transforms/ActivationCanonicalizations/ActivationCanonicalizations.h"
 #include "lib/Transforms/AddClientInterface/AddClientInterface.h"
 #include "lib/Transforms/ApplyFolders/ApplyFolders.h"
+#include "lib/Transforms/BooleanVectorizer/BooleanVectorizer.h"
 #include "lib/Transforms/CompareToSignRewrite/CompareToSignRewrite.h"
 #include "lib/Transforms/ConvertToCiphertextSemantics/ConvertToCiphertextSemantics.h"
 #include "lib/Transforms/DropUnitDims/DropUnitDims.h"
@@ -54,11 +56,11 @@
 #include "lib/Transforms/SplitPreprocessing/SplitPreprocessing.h"
 #include "lib/Transforms/TensorLinalgToAffineLoops/TensorLinalgToAffineLoops.h"
 #include "lib/Transforms/ValidateNoise/ValidateNoise.h"
-#include "llvm/include/llvm/Support/raw_ostream.h"    // from @llvm-project
-#include "mlir/include/mlir/Dialect/Affine/Passes.h"  // from @llvm-project
-#include "mlir/include/mlir/Pass/PassManager.h"       // from @llvm-project
-#include "mlir/include/mlir/Pass/PassOptions.h"       // from @llvm-project
-#include "mlir/include/mlir/Transforms/Passes.h"      // from @llvm-project
+#include "llvm/include/llvm/Support/raw_ostream.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/Affine/Transforms/Passes.h"  // from @llvm-project
+#include "mlir/include/mlir/Pass/PassManager.h"   // from @llvm-project
+#include "mlir/include/mlir/Pass/PassOptions.h"   // from @llvm-project
+#include "mlir/include/mlir/Transforms/Passes.h"  // from @llvm-project
 
 namespace mlir::heir {
 
@@ -151,7 +153,6 @@ void mlirToSecretArithmeticPipelineBuilder(
     OpPassManager& pm, const MlirToRLWEPipelineOptions& options) {
   pm.addPass(createWrapGeneric());
   convertToDataObliviousPipelineBuilder(pm);
-  pm.addPass(createActivationCanonicalizations());
   pm.addPass(createSelectRewrite());
   pm.addPass(createCompareToSignRewrite());
   pm.addPass(createCanonicalizerPass());
@@ -263,6 +264,7 @@ void mlirToRLWEPipeline(OpPassManager& pm,
   switch (scheme) {
     case RLWEScheme::bgvScheme: {
       auto secretInsertMgmtBGVOptions = SecretInsertMgmtBGVOptions{};
+      secretInsertMgmtBGVOptions.afterMul = options.modulusSwitchAfterMul;
       secretInsertMgmtBGVOptions.beforeMulIncludeFirstMul =
           options.modulusSwitchBeforeFirstMul;
       pm.addPass(createSecretInsertMgmtBGV(secretInsertMgmtBGVOptions));
@@ -274,11 +276,13 @@ void mlirToRLWEPipeline(OpPassManager& pm,
     }
     case RLWEScheme::ckksScheme: {
       auto secretInsertMgmtCKKSOptions = SecretInsertMgmtCKKSOptions{};
+      secretInsertMgmtCKKSOptions.afterMul = options.modulusSwitchAfterMul;
       secretInsertMgmtCKKSOptions.beforeMulIncludeFirstMul =
           options.modulusSwitchBeforeFirstMul;
       secretInsertMgmtCKKSOptions.slotNumber = options.ciphertextDegree;
       secretInsertMgmtCKKSOptions.bootstrapWaterline =
           options.ckksBootstrapWaterline;
+      secretInsertMgmtCKKSOptions.levelBudget = options.levelBudget;
       pm.addPass(createSecretInsertMgmtCKKS(secretInsertMgmtCKKSOptions));
       break;
     }
@@ -287,9 +291,12 @@ void mlirToRLWEPipeline(OpPassManager& pm,
       exit(EXIT_FAILURE);
   }
 
-  OptimizeRelinearizationOptions optimizeRelinearizationOptions;
-  optimizeRelinearizationOptions.allowMixedDegreeOperands = false;
-  pm.addPass(createOptimizeRelinearization(optimizeRelinearizationOptions));
+  // TODO(#2600): support loops in optimize-relinearization
+  if (!options.experimentalDisableLoopUnroll) {
+    OptimizeRelinearizationOptions optimizeRelinearizationOptions;
+    optimizeRelinearizationOptions.allowMixedDegreeOperands = false;
+    pm.addPass(createOptimizeRelinearization(optimizeRelinearizationOptions));
+  }
 
   // IR is stable now
 
@@ -443,8 +450,6 @@ BackendPipelineBuilder toOpenFhePipelineBuilder() {
 
     // Convert LWE (and scheme-specific CKKS/BGV ops) to OpenFHE
     pm.addPass(lwe::createLWEToOpenfhe());
-
-    // Simplify, in case the lowering revealed redundancy
     pm.addPass(createCanonicalizerPass());
     pm.addPass(createCSEPass());
 
@@ -456,8 +461,12 @@ BackendPipelineBuilder toOpenFhePipelineBuilder() {
     pm.addPass(
         openfhe::createConfigureCryptoContext(configureCryptoContextOptions));
 
-    // Hoist repeated rotations into EvalFastRotation(Precompute)
     pm.addPass(openfhe::createFastRotationPrecompute());
+    // Vectorize any operations
+    pm.addPass(createBooleanVectorizer());
+    pm.addPass(createCanonicalizerPass());
+    pm.addPass(createCSEPass());
+    pm.addPass(openfhe::createAllocToInPlace());
   };
 }
 
@@ -478,8 +487,9 @@ BackendPipelineBuilder toLattigoPipelineBuilder() {
     // Convert LWE (and scheme-specific BGV ops) to Lattigo
     pm.addPass(lwe::createLWEToLattigo());
 
-    // Convert Alloc Ops to Inplace Ops
-    pm.addPass(lattigo::createAllocToInplace());
+    // Convert Alloc Ops to InPlace Ops
+    // TODO(#2635): Disable until this is fixed.
+    // pm.addPass(lattigo::createAllocToInPlace());
 
     // Simplify, in case the lowering revealed redundancy
     pm.addPass(createCanonicalizerPass());
@@ -495,6 +505,7 @@ BackendPipelineBuilder toLattigoPipelineBuilder() {
 
 void linalgPreprocessingBuilder(OpPassManager& manager) {
   manager.addPass(createInlineActivations());
+  manager.addPass(createActivationCanonicalizations());
   manager.addPass(createLinalgCanonicalizations());
   manager.addPass(createDropUnitDims());
   manager.addPass(createFoldConstantTensors());

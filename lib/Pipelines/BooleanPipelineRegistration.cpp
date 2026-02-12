@@ -8,11 +8,9 @@
 #include "lib/Dialect/CGGI/Conversions/CGGIToJaxite/CGGIToJaxite.h"
 #include "lib/Dialect/CGGI/Conversions/CGGIToTfheRust/CGGIToTfheRust.h"
 #include "lib/Dialect/CGGI/Conversions/CGGIToTfheRustBool/CGGIToTfheRustBool.h"
-#include "lib/Dialect/CGGI/Transforms/BooleanVectorizer.h"
 #include "lib/Dialect/Secret/Conversions/SecretToCGGI/SecretToCGGI.h"
 #include "lib/Dialect/Secret/Transforms/DistributeGeneric.h"
-#include "lib/Pipelines/PipelineRegistration.h"
-#include "lib/Transforms/DropUnitDims/DropUnitDims.h"
+#include "lib/Transforms/BooleanVectorizer/BooleanVectorizer.h"
 #include "lib/Transforms/FoldConstantTensors/FoldConstantTensors.h"
 #include "lib/Transforms/ForwardInsertToExtract/ForwardInsertToExtract.h"
 #include "lib/Transforms/ForwardStoreToLoad/ForwardStoreToLoad.h"
@@ -21,9 +19,9 @@
 #include "lib/Transforms/MemrefToArith/MemrefToArith.h"
 #include "lib/Transforms/Secretize/Passes.h"
 #include "lib/Transforms/TensorLinalgToAffineLoops/TensorLinalgToAffineLoops.h"
-#include "lib/Transforms/UnusedMemRef/UnusedMemRef.h"
-#include "llvm/include/llvm/ADT/SmallVector.h"        // from @llvm-project
-#include "mlir/include/mlir/Dialect/Affine/Passes.h"  // from @llvm-project
+#include "llvm/include/llvm/ADT/SmallVector.h"  // from @llvm-project
+#include "mlir/include/mlir/Conversion/TensorToLinalg/TensorToLinalgPass.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/Affine/Transforms/Passes.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Arith/Transforms/Passes.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Bufferization/Transforms/FuncBufferizableOpInterfaceImpl.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Bufferization/Transforms/Passes.h"  // from @llvm-project
@@ -60,8 +58,8 @@ void mlirToCGGIPipeline(OpPassManager& pm,
                         const MLIRToCGGIPipelineOptions& options,
                         const std::string& yosysFilesPath,
                         const std::string& abcPath) {
-  // TOSA to linalg
-  ::mlir::heir::tosaToLinalg(pm);
+  pm.addPass(createConvertTensorToLinalgPass());
+  pm.addPass(createLinalgGeneralizeNamedOpsPass());
 
   // Linalg to Affine loops
   // pm.addPass(createDropUnitDims());
@@ -124,12 +122,15 @@ void mlirToCGGIPipeline(OpPassManager& pm,
       pm.addPass(secret::createSecretDistributeGeneric());
       pm.addPass(createCanonicalizerPass());
       pm.addPass(createSecretToCGGI());
+
       break;
     case Integer:
       pm.addPass(arith::createArithToCGGI());
       break;
   }
   // Cleanup SecretToCGGI
+  pm.addPass(createRemoveDeadValuesPass());
+  pm.addPass(createSymbolDCEPass());
   pm.addPass(createCanonicalizerPass());
   pm.addPass(createLinalgCanonicalizations());
   pm.addPass(createForwardInsertToExtract());
@@ -217,7 +218,7 @@ CGGIBackendPipelineBuilder toTfheRsPipelineBuilder() {
 CGGIBackendPipelineBuilder toFptPipelineBuilder() {
   return [=](OpPassManager& pm) {
     // Vectorize CGGI operations
-    pm.addPass(cggi::createBooleanVectorizer());
+    pm.addPass(createBooleanVectorizer());
     pm.addPass(createCanonicalizerPass());
     pm.addPass(createCSEPass());
     pm.addPass(createSCCPPass());
@@ -243,8 +244,8 @@ CGGIBackendPipelineBuilder toFptPipelineBuilder() {
 JaxiteBackendPipelineBuilder toJaxitePipelineBuilder() {
   return [=](OpPassManager& pm, const CGGIBackendOptions& options) {
     if (options.parallelism > 0) {
-      pm.addPass(cggi::createBooleanVectorizer(
-          cggi::BooleanVectorizerOptions{.parallelism = options.parallelism}));
+      pm.addPass(createBooleanVectorizer(
+          BooleanVectorizerOptions{.parallelism = options.parallelism}));
       pm.addPass(createCSEPass());
       pm.addPass(createRemoveDeadValuesPass());
     }

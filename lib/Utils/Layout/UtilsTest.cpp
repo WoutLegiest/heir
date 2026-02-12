@@ -50,8 +50,6 @@ void runRowMajorTest(RankedTensorType tensorType, int64_t numSlots) {
 }
 
 TEST(UtilsTest, TestAddModConstraint) {
-  MLIRContext context;
-
   auto maybeRel =
       getIntegerRelationFromIslStr("{ [x] : x >= 0 and 100 - x >= 0 }");
   ASSERT_TRUE(succeeded(maybeRel));
@@ -64,6 +62,67 @@ TEST(UtilsTest, TestAddModConstraint) {
   for (unsigned x = 0; x <= 100; ++x) {
     EXPECT_TRUE(rel.containsPointNoLocal({x, x % 32}));
   }
+}
+
+TEST(UtilsTest, TestSameRangeForDomainPoint_AgreeOnZeroZero) {
+  auto rel1 =
+      getIntegerRelationFromIslStr("{ [x] -> [y] : x = 0 and y = 0 }").value();
+  EXPECT_TRUE(sameRangeForDomainPoint({0}, rel1, rel1));
+}
+
+TEST(UtilsTest, TestSameRangeForDomainPoint_DifferOnZeroZeroByValue) {
+  auto rel1 =
+      getIntegerRelationFromIslStr("{ [x] -> [y] : x = 0 and y = 0 }").value();
+  auto rel2 =
+      getIntegerRelationFromIslStr("{ [x] -> [y] : x = 0 and y = 1 }").value();
+  EXPECT_FALSE(sameRangeForDomainPoint({0}, rel1, rel2));
+}
+
+TEST(UtilsTest, TestSameRangeForDomainPoint_DifferOnZeroZeroBySize) {
+  // (0, 0) is in both sets, but (0, 1), (0, 2), ... is in rel2
+  auto rel1 =
+      getIntegerRelationFromIslStr("{ [x] -> [y] : x = 0 and y = 0 }").value();
+  auto rel2 = getIntegerRelationFromIslStr(
+                  "{ [x] -> [y] : 0 <= x <= 5 and 0 <= y <= 5 }")
+                  .value();
+  EXPECT_FALSE(sameRangeForDomainPoint({0}, rel1, rel2));
+}
+
+TEST(UtilsTest, TestTryProveUnequal_DifferingDomainVars) {
+  auto rel1 =
+      getIntegerRelationFromIslStr("{ [x, z] -> [y] : x = 0 and y = 0 }")
+          .value();
+  auto rel2 =
+      getIntegerRelationFromIslStr("{ [x] -> [y] : x = 0 and y = 0 }").value();
+  EXPECT_TRUE(succeeded(tryProveUnequal(rel1, rel2)));
+}
+
+TEST(UtilsTest, TestTryProveUnequal_DifferingRangeVars) {
+  auto rel1 =
+      getIntegerRelationFromIslStr("{ [x] -> [y, z] : x = 0 and y = 0 }")
+          .value();
+  auto rel2 =
+      getIntegerRelationFromIslStr("{ [x] -> [y] : x = 0 and y = 0 }").value();
+  EXPECT_TRUE(succeeded(tryProveUnequal(rel1, rel2)));
+}
+
+TEST(UtilsTest, TestTryProveUnequal_DifferingOnTestPoint) {
+  auto rel1 =
+      getIntegerRelationFromIslStr("{ [x] -> [y] : x = 0 and y = 0 }").value();
+  auto rel2 =
+      getIntegerRelationFromIslStr("{ [x] -> [y] : x = 0 and y = 1 }").value();
+  EXPECT_TRUE(succeeded(tryProveUnequal(rel1, rel2)));
+}
+
+TEST(UtilsTest, TestTryProveUnequal_SameRelation) {
+  auto rel1 =
+      getIntegerRelationFromIslStr("{ [x] -> [y] : 0 <= x <= 10 and y = 2*x }")
+          .value();
+  auto rel2 =
+      getIntegerRelationFromIslStr(
+          "{ [x] -> [y] : 0 <= x <= 10 and 0 <= y <= 20 and x = y / 2 }")
+          .value();
+  EXPECT_FALSE(succeeded(tryProveUnequal(rel1, rel2)));
 }
 
 TEST(UtilsTest, SingleCiphertext) {
@@ -583,6 +642,45 @@ TEST(UtilsTest, TestGetSliceExtractionRelation) {
   for (const auto& point : expectedPoints) {
     auto maybeExists = sliceRelation.value().containsPointNoLocal(point);
     EXPECT_TRUE(maybeExists.has_value());
+  }
+}
+
+TEST(UtilsTest, TestGetCtComplementPoints) {
+  MLIRContext context;
+  RankedTensorType type =
+      RankedTensorType::get({8, 1024}, IndexType::get(&context));
+  auto rel = getIntegerRelationFromIslStr(
+      "{ [x] -> [y, slot] : x >= 0 and 7 >= y and y >= 0 and x = y and x mod 2 "
+      "= 0 and 7 >= x }");
+  ASSERT_TRUE(succeeded(rel));
+  std::vector<std::vector<int64_t>> expected = {{1}, {3}, {5}, {7}};
+  PointCollector collector;
+  getCtComplementPoints(rel.value(), collector, type);
+  EXPECT_EQ(collector.points, expected);
+}
+
+TEST(UtilsTest, TestGetCtComplementFromConvRelation) {
+  MLIRContext context;
+  RankedTensorType type =
+      RankedTensorType::get({1024, 1024}, IndexType::get(&context));
+  auto rel = getIntegerRelationFromIslStr(
+      "{ [i0, i1] -> [ct, slot] : (-32i0 - i1 + ct - 4*floor((slot)/28)) mod "
+      "1024 = 0 and 0 <= i0 <= 4 and 0 <= i1 <= 4 and 0 <= ct <= 1023 and slot "
+      ">= 0 and -28i0 <= slot <= 895 - 28i0 and slot <= 783 and -32i0 - i1 - "
+      "slot <= 4*floor((slot)/28) <= 1023 - 32i0 - i1 - slot and "
+      "28*floor((slot)/28) >= -31 + i1 + slot and 28*floor((slot)/28) <= i1 + "
+      "slot }");
+  ASSERT_TRUE(succeeded(rel));
+
+  // Expect that 241 to 1023 are the complement points.
+  PointCollector collector;
+  getCtComplementPoints(rel.value(), collector, type);
+
+  EXPECT_EQ(collector.points.size(), 783);
+  for (const auto& point : collector.points) {
+    EXPECT_EQ(point.size(), 1);
+    EXPECT_GE(point[0], 241);
+    EXPECT_LE(point[0], 1023);
   }
 }
 

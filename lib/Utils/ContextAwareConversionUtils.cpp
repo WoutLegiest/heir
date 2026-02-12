@@ -12,6 +12,7 @@
 #include "lib/Dialect/Secret/IR/SecretOps.h"
 #include "lib/Utils/ContextAwareDialectConversion.h"
 #include "lib/Utils/ContextAwareTypeConversion.h"
+#include "lib/Utils/Utils.h"
 #include "llvm/include/llvm/Support/Debug.h"             // from @llvm-project
 #include "llvm/include/llvm/Support/FormatVariadic.h"    // from @llvm-project
 #include "llvm/include/llvm/Support/raw_ostream.h"       // from @llvm-project
@@ -55,9 +56,8 @@ FailureOr<Value> encodeCleartextAsPlaintext(
   // TODO(#1643): inherit level information to plaintext type from init-op
   // mgmt attr. This actually needs to make LWEPlaintextType RNS aware.
   auto plaintextTy = lwe::LWEPlaintextType::get(
-      ctx, ciphertextElementType.getApplicationData(),
-      lwe::PlaintextSpaceAttr::get(ctx, plaintextSpace.getRing(),
-                                   plaintextEncoding));
+      ctx, lwe::PlaintextSpaceAttr::get(ctx, plaintextSpace.getRing(),
+                                        plaintextEncoding));
 
   // cleartext is a ciphertext-semantic tensor, so it
   // could be a tensor<Nxty>, tensor<k x N x ty>, (where k=1 is possible).
@@ -194,8 +194,11 @@ FailureOr<Operation*> SecretGenericFuncCallConversion::matchAndRewriteInner(
   // update the called func's type signature
 
   func::CallOp callOp = *op.getBody()->getOps<func::CallOp>().begin();
-  auto module = callOp->getParentOfType<ModuleOp>();
-  func::FuncOp callee = module.lookupSymbol<func::FuncOp>(callOp.getCallee());
+  auto maybeCallee = getCalledFunction(callOp);
+  if (failed(maybeCallee)) {
+    return op->emitError() << "failed to get called function";
+  }
+  auto callee = maybeCallee.value();
 
   // For now, ensure that there is only one caller to the callee.
   auto calleeUses = callee.getSymbolUses(callee->getParentOp());

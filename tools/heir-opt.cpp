@@ -15,6 +15,7 @@
 #include "lib/Dialect/CGGI/Transforms/Passes.h"
 #include "lib/Dialect/CKKS/Conversions/CKKSToLWE/CKKSToLWE.h"
 #include "lib/Dialect/CKKS/IR/CKKSDialect.h"
+#include "lib/Dialect/CKKS/Transforms/Passes.h"
 #include "lib/Dialect/Comb/IR/CombDialect.h"
 #include "lib/Dialect/HEIRInterfaces.h"
 #include "lib/Dialect/Jaxite/IR/JaxiteDialect.h"
@@ -59,8 +60,10 @@
 #include "lib/Transforms/ActivationCanonicalizations/ActivationCanonicalizations.h"
 #include "lib/Transforms/AddClientInterface/AddClientInterface.h"
 #include "lib/Transforms/AnnotateModule/AnnotateModule.h"
+#include "lib/Transforms/AnnotateMulDepth/AnnotateMulDepth.h"
 #include "lib/Transforms/AnnotateSecretness/AnnotateSecretness.h"
 #include "lib/Transforms/ApplyFolders/ApplyFolders.h"
+#include "lib/Transforms/BooleanVectorizer/BooleanVectorizer.h"
 #include "lib/Transforms/CompareToSignRewrite/CompareToSignRewrite.h"
 #include "lib/Transforms/ConvertIfToSelect/ConvertIfToSelect.h"
 #include "lib/Transforms/ConvertSecretExtractToStaticExtract/ConvertSecretExtractToStaticExtract.h"
@@ -78,6 +81,7 @@
 #include "lib/Transforms/ForwardStoreToLoad/ForwardStoreToLoad.h"
 #include "lib/Transforms/FullLoopUnroll/FullLoopUnroll.h"
 #include "lib/Transforms/GenerateParam/GenerateParam.h"
+#include "lib/Transforms/Halo/Passes.h"
 #include "lib/Transforms/InlineActivations/InlineActivations.h"
 #include "lib/Transforms/LayoutOptimization/InterfaceImpl.h"
 #include "lib/Transforms/LayoutOptimization/LayoutOptimization.h"
@@ -116,7 +120,7 @@
 #include "mlir/include/mlir/Conversion/UBToLLVM/UBToLLVM.h"  // from @llvm-project
 #include "mlir/include/mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Affine/IR/AffineOps.h"  // from @llvm-project
-#include "mlir/include/mlir/Dialect/Affine/Passes.h"   // from @llvm-project
+#include "mlir/include/mlir/Dialect/Affine/Transforms/Passes.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Arith/Transforms/BufferDeallocationOpInterfaceImpl.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Arith/Transforms/BufferizableOpInterfaceImpl.h"  // from @llvm-project
@@ -260,6 +264,7 @@ int main(int argc, char** argv) {
   // Custom passes in HEIR
   registerEmitCInterfacePass();
   cggi::registerCGGIPasses();
+  ckks::registerCKKSPasses();
   lattigo::registerLattigoPasses();
   lwe::registerLWEPasses();
   mgmt::registerMgmtPasses();
@@ -284,12 +289,15 @@ int main(int argc, char** argv) {
   registerDropUnitDims();
   registerAnnotateModulePasses();
   registerAnnotateSecretnessPasses();
+  registerAnnotateMulDepthPasses();
   registerApplyFoldersPasses();
+  registerBooleanVectorizerPasses();
   registerFoldPlaintextMasksPasses();
   registerForwardInsertSliceToExtractSlicePasses();
   registerForwardInsertToExtractPasses();
   registerForwardStoreToLoadPasses();
   registerGenerateParamPasses();
+  registerHaloPasses();
   registerOperationBalancerPasses();
   registerPopulateScalePasses();
   registerStraightLineVectorizerPasses();
@@ -369,9 +377,11 @@ int main(int argc, char** argv) {
   // Interfaces in HEIR
   secret::registerBufferizableOpInterfaceExternalModels(registry);
   rns::registerExternalRNSTypeInterfaces(registry);
-  registerOperandAndResultAttrInterface(registry);
+  registerIncreasesMulDepthOpInterface(registry);
   registerLayoutConversionHoistableInterface(registry);
+  registerOperandAndResultAttrInterface(registry);
   registerOperandLayoutRequirementOpInterface(registry);
+  registerPlaintextOperandInterface(registry);
 
   PassPipelineRegistration<>(
       "heir-polynomial-to-llvm",

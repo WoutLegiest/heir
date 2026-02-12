@@ -17,6 +17,7 @@ hugo_stats.json
 
 # python
 venv
+.venv
 **/dist/
 *.egg-info
 wheelhouse
@@ -27,7 +28,8 @@ scripts/jupyter/.ipynb_checkpoints/
 scripts/jupyter/heir-opt
 scripts/jupyter/heir-translate
 scripts/jupyter/abc
-scripts/jupyter/techmap.v
+scripts/jupyter/techmap_lut3.v
+scripts/jupyter/techmap_lut4.v
 
 # for rust codegen tests
 **/Cargo.lock

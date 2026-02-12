@@ -1,4 +1,38 @@
+#ifndef LIB_DIALECT_HEIR_INTERFACES_TD_
+#define LIB_DIALECT_HEIR_INTERFACES_TD_
+
 include "mlir/IR/OpBase.td"
+
+def SecretTypeInterface : TypeInterface<"SecretTypeInterface"> {
+  let cppNamespace = "::mlir::heir";
+  let description = [{
+    This interface marks that a type represents a secret value. This
+    is an interface (beyond just the `secret.secret` type) so that
+    concrete ciphertext types can also be marked as secret and reuse
+    analyses that depend on `SecretnessAnalysis`.
+  }];
+}
+
+def IncreasesMulDepthOpInterface : OpInterface<"IncreasesMulDepthOpInterface"> {
+  let cppNamespace = "::mlir::heir";
+  let description = [{
+    A trait that signals whether an operation is a mul-like operation, used for
+    generalizing multiplicative depth analysis.
+  }];
+
+  // No methods; We declare an interface instead of a Trait because we need to
+  // attach the interface to upstream MLIR ops, and there is no way to do that
+  // with Traits because Traits are intended to be statically checkable. Cf.
+  // https://discourse.llvm.org/t/how-to-add-addtional-traits-to-existing-ops/62039
+}
+
+def ResetsMulDepthOpInterface : OpInterface<"ResetsMulDepthOpInterface"> {
+  let cppNamespace = "::mlir::heir";
+  let description = [{
+    An interface that signals when an operation resets multiplicative depth
+    among its results, such as a `mgmt.bootstrap`.
+  }];
+}
 
 def LUTOpInterface : OpInterface<"LUTOpInterface"> {
   let cppNamespace = "::mlir::heir";
@@ -10,6 +44,35 @@ def LUTOpInterface : OpInterface<"LUTOpInterface"> {
     InterfaceMethod<
       "Gets lookup table inputs from most significant bit to least.",
       "std::optional<mlir::ValueRange>", "getLookupTableInputs"
+    >,
+  ];
+}
+
+def PlaintextOperandInterface : OpInterface<"PlaintextOperandInterface"> {
+  let cppNamespace = "::mlir::heir";
+  let description = [{
+    An interface that identifies which operand indices of an operation may be plaintext.
+    This is relevant primarily for a "plaintext-ciphertext" operation before lowering
+    to scheme-specific APIs, such as an `arith.addi` or a `tensor_ext.rotate_and_reduce`.
+
+    This interface is used in dataflow analyses to determine which operand of a
+    ciphertext-plaintext op requires back-propagating level/dimension
+    information to. Commutative ops for which multiple operands _may_ be plaintexts
+    (e.g., `arith.addi`) should report that both operand indices may be plaintext,
+    and the analysis is responsible for determining the secretness of the operands
+    in question.
+
+    Operands that are cleartext (i.e., never encoded) should not be included here,
+    e.g., the `index` operand of a `tensor_ext.rotate`.
+  }];
+
+  let methods = [
+    InterfaceMethod<
+      /*desc=*/"Return a vector of indices describing which operands may be plaintexts.",
+      /*retTy=*/"SmallVector<unsigned>",
+      /*methodName=*/"maybePlaintextOperands",
+      /*args=*/(ins ),
+      /*defaultImplementation=*/[{ return {}; }]
     >,
   ];
 }
@@ -78,37 +141,52 @@ def ElementwiseByOperandOpInterface : OpInterface<"ElementwiseByOperandOpInterfa
   }];
 }
 
-def LayoutConversionHoistableOpInterface : OpInterface<"LayoutConversionHoistableOpInterface"> {
+def BatchVectorizableOpInterface : OpInterface<"BatchVectorizableOpInterface"> {
   let cppNamespace = "::mlir::heir";
   let description = [{
-    An interface that abstracts the common information required for the
-    `layout-optimization` pass to evaluate the feasibility and cost of hoisting
-    a `convert_layout` op through a given operation.
+    An interface that identifies the operation to be batched, and specifies the
+    conditions under which it can be batched with other operations and what
+    batched operation it will be transformed into. This interface is used to
+    support operations in the `batch-vectorize` pass.
+
+    This interface is required to be on operations with the ElementwiseMappable
+    or ElementwiseByOperandOpInterface. These interface determine which operands
+    to map elementwise (or keep as wholesale scalars).
+  }];
+
+    let cppNamespace = "::mlir::heir";
+  let description = [{
+    An interface that signals which operands require a layout for
+    implementation with an FHE kernel. This may also depend on whether
+    the operand is secret.
+
+    By default, all operands require a layout, even cleartext operands.
   }];
 
   let methods = [
     InterfaceMethod<
-      "Get hoisters for the op.",
-      "std::vector<::mlir::heir::Hoister>",
-      "getHoisters",
-      (ins "::mlir::heir::tensor_ext::ConvertLayoutOp":$convertLayoutOp)
+      /*desc=*/"Return true if the operation is compatible for batching with this",
+      /*retTy=*/"bool",
+      /*methodName=*/"isBatchCompatible",
+      /*args=*/(ins "::mlir::Operation *":$rhs),
+      /*body=*/[{}],
+      /*defaultImplementation=*/[{
+        ::mlir::Operation *lhs = $_op;
+        return (lhs->getDialect() == rhs->getDialect() &&
+            lhs->getResultTypes() == rhs->getResultTypes() &&
+            lhs->getNumOperands() == rhs->getNumOperands());
+      }]
+    >,
+    InterfaceMethod<
+      /*desc=*/"Return the batched operation given a list of batchable operations",
+      /*retTy=*/"FailureOr<::mlir::Operation *>",
+      /*methodName=*/"buildBatchedOperation",
+      /*args=*/(ins "::mlir::MLIRContext *":$context,
+                    "::mlir::OpBuilder &":$builder,
+                    "::mlir::SmallVector<::mlir::Value>":$vectorizedOperands,
+                    "::mlir::SmallVector<::mlir::Operation*>":$operations)
     >,
   ];
-
-  // TODO(#2317): figure out how to get OpInterface verifier to run
-  // let verify = [{
-  //   ::mlir::heir::KernelName kernelName = ::mlir::heir::KernelName::Trivial;
-  //   auto attrName = ::mlir::heir::secret::SecretDialect::kKernelAttrName;
-  //   if ($_op->hasAttr(attrName)) {
-  //     auto attr = $_op->getAttrOfType<::mlir::heir::secret::KernelAttr>(attrName);
-  //     kernelName = attr.getName();
-  //   }
-  //   if (!::mlir::heir::isSupportedKernel($_op, kernelName)) {
-  //     return $_op->emitOpError()
-  //            << "has unsupported kernel ''";
-  //   }
-  //   return success();
-  // }];
 }
 
 def OperandAndResultAttrInterface : OpInterface<"OperandAndResultAttrInterface"> {
@@ -361,3 +439,5 @@ def OperandAndResultAttrInterface : OpInterface<"OperandAndResultAttrInterface">
     }
   }];
 }
+
+#endif  // LIB_DIALECT_HEIR_IR_HEIRINTERFACES_TD_

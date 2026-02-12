@@ -6,12 +6,12 @@ def frontend_test(name, srcs, deps = [], data = [], tags = []):
     """A py_test replacement with an env including all backend dependencies.
     """
     include_dirs = [
-        "openfhe/",
-        "openfhe/src/binfhe/include",
-        "openfhe/src/core/include",
-        "openfhe/src/pke/include",
-        "cereal/include",
-        "rapidjson/include",
+        "openfhe+/",
+        "openfhe+/src/binfhe/include",
+        "openfhe+/src/core/include",
+        "openfhe+/src/pke/include",
+        "cereal+/include",
+        "rapidjson+/include",
     ]
 
     libs = [
@@ -34,7 +34,7 @@ def frontend_test(name, srcs, deps = [], data = [], tags = []):
         tags = tags,
         env = {
             # this dir is relative to $RUNFILES_DIR, which is set by bazel at runtime
-            "OPENFHE_LIB_DIR": "openfhe",
+            "OPENFHE_LIB_DIR": "openfhe+",
             "OPENFHE_INCLUDE_TYPE": "source-relative",
             "OPENFHE_LINK_LIBS": ":".join(libs),
             "OPENFHE_INCLUDE_DIR": ":".join(include_dirs),

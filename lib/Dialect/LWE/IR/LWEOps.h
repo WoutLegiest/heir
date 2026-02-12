@@ -16,6 +16,7 @@
 #include "mlir/include/mlir/Support/LogicalResult.h"  // from @llvm-project
 
 // IWYU pragma: begin_keep
+#include "lib/Dialect/HEIRInterfaces.h"
 #include "lib/Dialect/LWE/IR/LWEDialect.h"
 #include "lib/Dialect/LWE/IR/LWETraits.h"
 #include "mlir/include/mlir/IR/BuiltinOps.h"  // from @llvm-project
@@ -218,7 +219,7 @@ LogicalResult verifyLevelReduceOp(Op* op) {
   auto x = getCtTy(op->getInput());
   auto out = getCtTy(op->getOutput());
 
-  if (x.getModulusChain().getCurrent() <= levelToDrop) {
+  if (x.getModulusChain().getCurrent() < levelToDrop) {
     return op->emitOpError() << "level_to_drop is out of bounds";
   }
 
@@ -242,7 +243,7 @@ LogicalResult inferAddOpReturnTypes(
   auto newDim = std::max(x.getCiphertextSpace().getSize(),
                          y.getCiphertextSpace().getSize());
   auto newCtTy = lwe::LWECiphertextType::get(
-      ctx, x.getApplicationData(), x.getPlaintextSpace(),
+      ctx, x.getPlaintextSpace(),
       lwe::CiphertextSpaceAttr::get(ctx, x.getCiphertextSpace().getRing(),
                                     x.getCiphertextSpace().getEncryptionType(),
                                     newDim),
@@ -294,7 +295,7 @@ LogicalResult inferMulOpReturnTypes(
       inferMulOpPlaintextSpaceAttr(ctx, xPlaintextSpace, yPlaintextSpace);
 
   auto newCtTy = lwe::LWECiphertextType::get(
-      ctx, x.getApplicationData(), newPlaintextSpaceAttr,
+      ctx, newPlaintextSpaceAttr,
       lwe::CiphertextSpaceAttr::get(ctx, x.getCiphertextSpace().getRing(),
                                     x.getCiphertextSpace().getEncryptionType(),
                                     newDim),
@@ -329,9 +330,9 @@ LogicalResult inferMulPlainOpReturnTypes(
   lwe::PlaintextSpaceAttr newPlaintextSpaceAttr =
       inferMulOpPlaintextSpaceAttr(ctx, ctPlaintextSpace, ptPlaintextSpace);
 
-  auto newCtTy = lwe::LWECiphertextType::get(
-      ctx, ct.getApplicationData(), newPlaintextSpaceAttr,
-      ct.getCiphertextSpace(), ct.getKey(), ct.getModulusChain());
+  auto newCtTy = lwe::LWECiphertextType::get(ctx, newPlaintextSpaceAttr,
+                                             ct.getCiphertextSpace(),
+                                             ct.getKey(), ct.getModulusChain());
 
   if (auto tensorTy = dyn_cast<RankedTensorType>(adaptor.getLhs().getType())) {
     inferredReturnTypes.push_back(
@@ -349,7 +350,7 @@ LogicalResult inferRelinearizeOpReturnTypes(
     SmallVectorImpl<Type>& inferredReturnTypes) {
   auto x = getCtTy(adaptor.getInput());
   auto newCtTy = lwe::LWECiphertextType::get(
-      ctx, x.getApplicationData(), x.getPlaintextSpace(),
+      ctx, x.getPlaintextSpace(),
       lwe::CiphertextSpaceAttr::get(ctx, x.getCiphertextSpace().getRing(),
                                     x.getCiphertextSpace().getEncryptionType(),
                                     adaptor.getToBasis().size()),
@@ -380,7 +381,7 @@ LogicalResult inferLevelReduceOpReturnTypes(
       newModulusChain, x.getCiphertextSpace().getRing().getPolynomialModulus());
 
   auto newCtTy = lwe::LWECiphertextType::get(
-      ctx, x.getApplicationData(), x.getPlaintextSpace(),
+      ctx, x.getPlaintextSpace(),
       lwe::CiphertextSpaceAttr::get(ctx, newRing,
                                     x.getCiphertextSpace().getEncryptionType(),
                                     x.getCiphertextSpace().getSize()),

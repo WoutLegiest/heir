@@ -6,9 +6,11 @@
 #include <optional>
 #include <string>
 
+#include "lib/Dialect/ModuleAttributes.h"
 #include "lib/Dialect/Secret/IR/SecretOps.h"
 #include "lib/Dialect/Secret/IR/SecretTypes.h"
 #include "lib/Utils/AttributeUtils.h"
+#include "lib/Utils/Utils.h"
 #include "llvm/include/llvm/ADT/DenseMap.h"            // from @llvm-project
 #include "llvm/include/llvm/ADT/STLExtras.h"           // from @llvm-project
 #include "llvm/include/llvm/ADT/SmallVector.h"         // from @llvm-project
@@ -86,6 +88,14 @@ llvm::SmallVector<Value> buildResolvedIndices(Operation* op,
     }
   }
   return indices;
+}
+
+bool isCallToPackingHelper(Operation* op) {
+  auto callOp = dyn_cast<func::CallOp>(op);
+  if (!callOp) return false;
+  auto funcOp = getCalledFunction(callOp);
+  if (failed(funcOp)) return false;
+  return funcOp.value()->hasAttr(kClientPackFuncAttrName);
 }
 
 }  // namespace
@@ -253,13 +263,13 @@ LogicalResult RemoveNonSecretGenericArgs::matchAndRewrite(
 
 LogicalResult CaptureAmbientScope::matchAndRewrite(
     GenericOp genericOp, PatternRewriter& rewriter) const {
-  Value* foundValue = nullptr;
+  Value foundValue;
   rewriter.setInsertionPointToStart(genericOp.getBody());
   genericOp.getBody()->walk([&](Operation* op) -> WalkResult {
     for (Value operand : op->getOperands()) {
       Region* operandRegion = operand.getParentRegion();
       if (operandRegion && !genericOp.getRegion().isAncestor(operandRegion)) {
-        foundValue = &operand;
+        foundValue = operand;
         // If this is an index operand of an affine operation, update to memref
         // ops. Affine dimensions must be block arguments for affine.for or
         // affine.parallel.
@@ -289,11 +299,11 @@ LogicalResult CaptureAmbientScope::matchAndRewrite(
     return WalkResult::advance();
   });
 
-  if (foundValue == nullptr) {
+  if (!foundValue) {
     return failure();
   }
 
-  Value value = *foundValue;
+  Value value = foundValue;
   rewriter.modifyOpInPlace(genericOp, [&]() {
     BlockArgument newArg =
         genericOp.getBody()->addArgument(value.getType(), genericOp.getLoc());
@@ -612,7 +622,8 @@ LogicalResult HoistPlaintextOps::matchAndRewrite(
         !isa<linalg::LinalgDialect>(op.getDialect())) {
       return false;
     }
-    if (!isSpeculatable(&op)) {
+    // Make an exception for function calls that are layout assignments.
+    if (!isSpeculatable(&op) && !isCallToPackingHelper(&op)) {
       return false;
     }
     for (Value operand : op.getOperands()) {

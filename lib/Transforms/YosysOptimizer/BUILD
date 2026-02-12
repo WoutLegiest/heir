@@ -87,7 +87,8 @@ cc_library(
     ],
     data = [
         "@edu_berkeley_abc//:abc",
-        "@heir//lib/Transforms/YosysOptimizer/yosys:techmap.v",
+        "@heir//lib/Transforms/YosysOptimizer/yosys:techmap_lut3.v",
+        "@heir//lib/Transforms/YosysOptimizer/yosys:techmap_lut4.v",
     ],
     deps = [
         ":BooleanGateImporter",
@@ -99,6 +100,7 @@ cc_library(
         "@heir//lib/Dialect/Comb/IR:Dialect",
         "@heir//lib/Dialect/Secret/IR:SecretPatterns",
         "@heir//lib/Target/Verilog:VerilogEmitter",
+        "@heir//lib/Utils",
         "@heir//lib/Utils:TransformUtils",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:AffineAnalysis",

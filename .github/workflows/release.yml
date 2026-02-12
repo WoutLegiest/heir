@@ -7,25 +7,48 @@ on:
 
 jobs:
   create-release:
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: ubuntu-24.04-16core
     permissions:
       contents: write
     outputs:
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # pin@4.3.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
 
       - name: Get current date
         id: date
         run: echo "date=$(date +'%Y.%m.%d')" >> "$GITHUB_OUTPUT"
 
+      - name: Install dependencies
+        run: |
+          ./.github/install_clang_version.sh 19
+
+      - name: "Run `bazel build`"
+        run: |
+          bazel build -c opt //tools:all
+
+      - name: Ensure binaries can run
+        shell: bash
+        run: |
+            bazel-bin/tools/heir-opt --help
+            bazel-bin/tools/heir-translate --help
+            bazel-bin/tools/heir-lsp --help
+            [ -f bazel-bin/external/edu_berkeley_abc/abc ]
+
       - name: Create Release
         id: release
-        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8  # pin@v2.3.2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b  # v2
         with:
           tag_name: v${{ steps.date.outputs.date }}
           generate_release_notes: true
+          files: |
+            bazel-bin/tools/heir-opt
+            bazel-bin/tools/heir-translate
+            bazel-bin/tools/heir-lsp
+            bazel-bin/external/edu_berkeley_abc/abc
+            lib/Transforms/YosysOptimizer/yosys/techmap.v
 
   monitor-wheels:
     runs-on: ubuntu-latest
@@ -47,7 +70,7 @@ jobs:
 
       - name: Create issue on failure
         if: steps.wait_for_wheels.outcome == 'failure'
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # pin@v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
         with:
           script: |
             github.rest.issues.create({

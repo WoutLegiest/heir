@@ -13,6 +13,7 @@ cc_library(
     deps = [
         ":MathUtils",
         "@llvm-project//llvm:Support",
+        "@llvm-project//mlir:ArithDialect",
         "@llvm-project//mlir:FuncDialect",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",
@@ -96,6 +97,7 @@ cc_library(
         ":AttributeUtils",
         ":ContextAwareDialectConversion",
         ":ContextAwareTypeConversion",
+        ":Utils",
         "@heir//lib/Dialect/LWE/IR:Dialect",
         "@heir//lib/Dialect/Mgmt/IR:Dialect",
         "@heir//lib/Dialect/Secret/IR:Dialect",
@@ -145,6 +147,7 @@ cc_library(
     srcs = ["MathUtils.cpp"],
     hdrs = ["MathUtils.h"],
     deps = [
+        ":APIntUtils",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:Support",
     ],
@@ -162,6 +165,30 @@ cc_test(
     deps = [
         ":LogArithmetic",
         "@googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "APIntUtilsTest",
+    srcs = ["APIntUtilsTest.cpp"],
+    deps = [
+        ":APIntUtils",
+        "@googletest//:gtest_main",
+        "@llvm-project//llvm:Support",
+        "@llvm-project//mlir:Support",
+    ],
+)
+
+cc_test(
+    name = "MathUtilsTest",
+    srcs = ["MathUtilsTest.cpp"],
+    deps = [
+        ":APIntUtils",
+        ":MathUtils",
+        "@fuzztest//fuzztest",
+        "@googletest//:gtest_main",
+        "@llvm-project//llvm:Support",
+        "@llvm-project//mlir:Support",
     ],
 )
 
@@ -187,5 +214,20 @@ cc_library(
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",
         "@llvm-project//mlir:TensorDialect",
+    ],
+)
+
+cc_library(
+    name = "AllocToInPlaceUtils",
+    # avoid http://go/cpp-features#layering_check with an empty cpp file
+    srcs = ["AllocToInPlaceUtils.cpp"],
+    hdrs = ["AllocToInPlaceUtils.h"],
+    deps = [
+        "@heir//lib/Utils/Tablegen:InPlaceOpInterface",
+        "@llvm-project//mlir:Analysis",
+        "@llvm-project//mlir:ArithDialect",
+        "@llvm-project//mlir:FuncDialect",
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:Support",
     ],
 )

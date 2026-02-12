@@ -5,28 +5,35 @@
 #include <functional>
 
 #include "lib/Analysis/Utils.h"
+#include "lib/Dialect/HEIRInterfaces.h"
 #include "lib/Dialect/Secret/IR/SecretDialect.h"
 #include "lib/Dialect/Secret/IR/SecretOps.h"
 #include "lib/Dialect/Secret/IR/SecretTypes.h"
 #include "llvm/include/llvm/Support/Casting.h"             // from @llvm-project
+#include "llvm/include/llvm/Support/Debug.h"               // from @llvm-project
+#include "llvm/include/llvm/Support/DebugLog.h"            // from @llvm-project
 #include "mlir/include/mlir/Analysis/DataFlowFramework.h"  // from @llvm-project
 #include "mlir/include/mlir/Dialect/Func/IR/FuncOps.h"     // from @llvm-project
 #include "mlir/include/mlir/IR/Attributes.h"               // from @llvm-project
 #include "mlir/include/mlir/IR/BuiltinAttributes.h"        // from @llvm-project
 #include "mlir/include/mlir/IR/OpDefinition.h"             // from @llvm-project
 #include "mlir/include/mlir/IR/Operation.h"                // from @llvm-project
+#include "mlir/include/mlir/IR/TypeUtilities.h"            // from @llvm-project
+#include "mlir/include/mlir/IR/Types.h"                    // from @llvm-project
 #include "mlir/include/mlir/IR/Value.h"                    // from @llvm-project
 #include "mlir/include/mlir/IR/ValueRange.h"               // from @llvm-project
 #include "mlir/include/mlir/IR/Visitors.h"                 // from @llvm-project
 #include "mlir/include/mlir/Interfaces/CallInterfaces.h"   // from @llvm-project
 #include "mlir/include/mlir/Support/LLVM.h"                // from @llvm-project
 
+#define DEBUG_TYPE = "secretness-analysis"
+
 namespace mlir {
 namespace heir {
 
 void SecretnessAnalysis::setToEntryState(SecretnessLattice* lattice) {
   auto value = lattice->getAnchor();
-  bool secretness = isa<secret::SecretType>(value.getType());
+  bool secretness = isa<SecretTypeInterface>(value.getType());
   auto blockArg = dyn_cast<BlockArgument>(value);
 
   Operation* operation = nullptr;
@@ -48,9 +55,10 @@ void SecretnessAnalysis::setToEntryState(SecretnessLattice* lattice) {
   // check if the operand is either of secret type or annotated with
   // {secret.secret}
   if (auto funcOp = dyn_cast<func::FuncOp>(*operation)) {
-    // Check if it has secret type
-    secretness = isa<secret::SecretType>(
-        funcOp.getArgumentTypes()[blockArg.getArgNumber()]);
+    Type argType = funcOp.getArgumentTypes()[blockArg.getArgNumber()];
+    // Check if it has secret-like type (secret, ciphertext, or shaped type
+    // thereof)
+    secretness = isa<SecretTypeInterface>(getElementTypeOrSelf(argType));
 
     // check if it is annotated as {secret.secret}
     UnitAttr attr = funcOp.getArgAttrOfType<UnitAttr>(
@@ -66,6 +74,7 @@ void SecretnessAnalysis::setToEntryState(SecretnessLattice* lattice) {
 LogicalResult SecretnessAnalysis::visitOperation(
     Operation* operation, ArrayRef<const SecretnessLattice*> operands,
     ArrayRef<SecretnessLattice*> results) {
+  LDBG() << "Visiting operation " << operation->getName();
   auto resultSecretness = Secretness();
   bool isUninitializedOpFound = false;
 
@@ -83,8 +92,11 @@ LogicalResult SecretnessAnalysis::visitOperation(
     return success();
   }
 
+  LDBG() << "Secretness of operands and results: ";
+  int i = 0;
   for (const SecretnessLattice* operand : operands) {
     const Secretness operandSecretness = operand->getValue();
+    LDBG() << "o(" << i << ") = " << operandSecretness;
     if (!operandSecretness.isInitialized()) {
       // Keep record if operand is uninitialized
       isUninitializedOpFound = true;
@@ -92,7 +104,9 @@ LogicalResult SecretnessAnalysis::visitOperation(
     resultSecretness = Secretness::join(resultSecretness, operandSecretness);
     if (resultSecretness.isInitialized() && resultSecretness.getSecretness())
       break;
+    ++i;
   }
+  LDBG() << "result = " << resultSecretness;
 
   // Uninitialized operand: "false" needs to be reverted to "unknown"
   // "secret" can remain, as "unknown + secret = secret"
@@ -102,6 +116,7 @@ LogicalResult SecretnessAnalysis::visitOperation(
   // TODO (#888): Handle region-bearing ops via visitNonControlFlowArguments
   if (isUninitializedOpFound || operation->getNumRegions()) {
     if (resultSecretness.isInitialized() && !resultSecretness.getSecretness()) {
+      LDBG() << "for uninitialized operand, converting to unknown secretness";
       resultSecretness = Secretness();
     }
   }

@@ -15,12 +15,11 @@
 
 #include "include/cereal/archives/portable_binary.hpp"  // from @cereal
 #include "include/cereal/cereal.hpp"                    // from @cereal
+#include "lib/Analysis/Cpp/ConstQualifierAnalysis.h"
 #include "lib/Analysis/SelectVariableNames/SelectVariableNames.h"
-#include "lib/Dialect/LWE/IR/LWEAttributes.h"
-#include "lib/Dialect/LWE/IR/LWEOps.h"
-#include "lib/Dialect/LWE/IR/LWETypes.h"
 #include "lib/Dialect/ModuleAttributes.h"
 #include "lib/Dialect/Openfhe/IR/OpenfheOps.h"
+#include "lib/Dialect/Openfhe/IR/OpenfheTypes.h"
 #include "lib/Target/OpenFhePke/OpenFheUtils.h"
 #include "lib/Utils/TargetUtils.h"
 #include "llvm/include/llvm/ADT/STLExtras.h"           // from @llvm-project
@@ -217,8 +216,9 @@ LogicalResult translateToOpenFhePke(Operation* op, llvm::raw_ostream& os,
                                     const std::string& weightsFile,
                                     bool skipVectorResizing) {
   SelectVariableNames variableNames(op);
-  OpenFhePkeEmitter emitter(os, &variableNames, importType, weightsFile,
-                            skipVectorResizing);
+  ConstQualifierAnalysis constAnalysis(op);
+  OpenFhePkeEmitter emitter(os, &variableNames, &constAnalysis, importType,
+                            weightsFile, skipVectorResizing);
   LogicalResult result = emitter.translate(*op);
   return result;
 }
@@ -238,29 +238,34 @@ LogicalResult OpenFhePkeEmitter::translate(Operation& op) {
           .Case<arith::ConstantOp, arith::ExtSIOp, arith::ExtUIOp,
                 arith::FloorDivSIOp, arith::IndexCastOp, arith::ExtFOp,
                 arith::RemSIOp, arith::AddIOp, arith::AddFOp, arith::AndIOp,
-                arith::SubIOp, arith::MulIOp, arith::DivSIOp, arith::CmpIOp,
-                arith::SelectOp>([&](auto op) { return printOperation(op); })
-          // SCF ops
-          .Case<scf::IfOp, scf::ForOp, scf::YieldOp>(
+                arith::SubIOp, arith::MulFOp, arith::MulIOp, arith::DivSIOp,
+                arith::CmpIOp, arith::SelectOp, arith::MaxSIOp, arith::MinSIOp>(
               [&](auto op) { return printOperation(op); })
+          // SCF ops
+          .Case<scf::IfOp, scf::ForOp, scf::ForallOp, scf::InParallelOp,
+                scf::YieldOp>([&](auto op) { return printOperation(op); })
           // Tensor ops
           .Case<tensor::ConcatOp, tensor::EmptyOp, tensor::InsertOp,
                 tensor::InsertSliceOp, tensor::ExtractOp,
                 tensor::ExtractSliceOp, tensor::SplatOp,
                 tensor::CollapseShapeOp, tensor::ExpandShapeOp,
-                tensor::FromElementsOp, tensor::ConcatOp>(
+                tensor::FromElementsOp, tensor::ConcatOp,
+                tensor::ParallelInsertSliceOp>(
               [&](auto op) { return printOperation(op); })
-          // LWE ops
-          .Case<lwe::RLWEDecodeOp, lwe::ReinterpretApplicationDataOp>(
+          .Case<DecodeOp, DecodeCKKSOp>(
               [&](auto op) { return printOperation(op); })
           // OpenFHE ops
-          .Case<AddOp, AddPlainOp, SubOp, SubPlainOp, MulNoRelinOp, MulOp,
-                MulPlainOp, SquareOp, NegateOp, MulConstOp, RelinOp,
-                ModReduceOp, LevelReduceOp, RotOp, AutomorphOp, FastRotationOp,
-                FastRotationPrecomputeOp, KeySwitchOp, EncryptOp, DecryptOp,
-                GenParamsOp, GenContextOp, GenMulKeyOp, GenRotKeyOp,
-                GenBootstrapKeyOp, MakePackedPlaintextOp,
-                MakeCKKSPackedPlaintextOp, SetupBootstrapOp, BootstrapOp>(
+          .Case<AddInPlaceOp, AddOp, AddPlainInPlaceOp, AddPlainOp, AutomorphOp,
+                BootstrapOp, DecryptOp, EncryptOp, FastRotationOp,
+                FastRotationExtOp, FastRotationPrecomputeOp, GenBootstrapKeyOp,
+                GenContextOp, GenMulKeyOp, GenParamsOp, GenRotKeyOp,
+                KeySwitchDownOp, KeySwitchInPlaceOp, KeySwitchOp,
+                LevelReduceInPlaceOp, LevelReduceOp, MakeCKKSPackedPlaintextOp,
+                MakePackedPlaintextOp, ModReduceInPlaceOp, ModReduceOp,
+                MulConstInPlaceOp, MulConstOp, MulNoRelinOp, MulOp, MulPlainOp,
+                NegateInPlaceOp, NegateOp, RelinInPlaceOp, RelinOp, RotOp,
+                SetupBootstrapOp, SquareInPlaceOp, SquareOp, SubInPlaceOp,
+                SubOp, SubPlainInPlaceOp, SubPlainOp>(
               [&](auto op) { return printOperation(op); })
           .Default([&](Operation&) {
             return emitError(op.getLoc(), "unable to find printer for op");
@@ -349,10 +354,6 @@ LogicalResult OpenFhePkeEmitter::printOperation(func::FuncOp funcOp) {
 }
 
 LogicalResult OpenFhePkeEmitter::printOperation(func::CallOp op) {
-  if (op.getNumResults() > 1) {
-    return emitError(op.getLoc(), "Only one return value supported");
-  }
-
   // build debug attribute map for debug call
   auto debugAttrMapName = getDebugAttrMapName();
   if (isDebugPort(op.getCallee())) {
@@ -383,8 +384,18 @@ LogicalResult OpenFhePkeEmitter::printOperation(func::CallOp op) {
        << "\";\n";
   }
 
-  if (op.getNumResults() != 0) {
-    emitAutoAssignPrefix(op.getResult(0));
+  std::string structResultName;
+  if (op.getNumResults() == 1) {
+    emitAutoAssignPrefix(op.getResults()[0]);
+  } else if (op.getNumResults() > 1) {
+    // If there are multiple results, then we can return a const auto& of the
+    // struct build for this bundle of results. But then we need to set each
+    // result here as accessors to the result struct. Since each result is
+    // unique, the result name can just be a concatenation of the first result
+    // with the suffix "Struct".
+    structResultName = llvm::formatv(
+        "{0}Struct", variableNames->getNameForValue(op.getResults()[0]));
+    os << "auto" << " " << structResultName << " = ";
   }
 
   os << canonicalizeDebugPort(op.getCallee()) << "(";
@@ -396,15 +407,28 @@ LogicalResult OpenFhePkeEmitter::printOperation(func::CallOp op) {
     os << ", " << debugAttrMapName;
   }
   os << ");\n";
+
+  if (op.getNumResults() > 1) {
+    for (auto [idx, result] : llvm::enumerate(op.getResults())) {
+      emitAutoAssignPrefix(result);
+      os << structResultName << ".arg" << idx << ";\n";
+    }
+  }
   return success();
 }
 
 LogicalResult OpenFhePkeEmitter::printOperation(func::ReturnOp op) {
-  if (op.getNumOperands() != 1) {
-    return emitError(op.getLoc(), "Only one return value supported");
+  if (op.getNumOperands() == 1) {
+    os << "return " << variableNames->getNameForValue(op.getOperands()[0])
+       << ";\n";
+  } else if (op.getNumOperands() > 1) {
+    os << "return {";
+    os << commaSeparatedValues(op.getOperands(), [&](Value value) {
+      return variableNames->getNameForValue(value);
+    });
+    os << "};\n";
   }
-  os << "return " << variableNames->getNameForValue(op.getOperands()[0])
-     << ";\n";
+
   return success();
 }
 
@@ -432,7 +456,7 @@ LogicalResult OpenFhePkeEmitter::printOperation(affine::AffineForOp op) {
         variableNames->getNameForValue(result) ==
             variableNames->getNameForValue(operand)) {
       // This occurs in cases where the loop is inserting into a tensor and
-      // passing it along as an inter arg.
+      // passing it along as an iter arg.
       continue;
     }
 
@@ -466,7 +490,24 @@ LogicalResult OpenFhePkeEmitter::printOperation(affine::AffineForOp op) {
 }
 
 LogicalResult OpenFhePkeEmitter::printOperation(affine::AffineYieldOp op) {
-  // Assume all yielded loop values have already been assigned.
+  // Assign each operand to the corresponding iter arg. This may be strictly
+  // necessary in such cases as the iter_arg being the result of inserting
+  // a value into an empty tensor (defined outside the loop) which is then
+  // passed as an iter_arg.
+  for (auto i = 0; i < op.getNumOperands(); ++i) {
+    affine::AffineForOp loop = op->getParentOfType<affine::AffineForOp>();
+    Value operand = op->getOperand(i);
+    Value iterArg = loop.getRegionIterArgs()[i];
+    if (failed(emitTypedAssignPrefix(iterArg, op.getLoc(),
+                                     /*constant=*/false))) {
+      return emitError(
+          op.getLoc(),
+          llvm::formatv("Failed to emit typed assign prefix for {}", iterArg));
+    }
+
+    os << variableNames->getNameForValue(operand);
+    os << ";\n";
+  }
   return success();
 }
 
@@ -545,7 +586,7 @@ LogicalResult OpenFhePkeEmitter::printOperation(scf::ForOp op) {
         variableNames->getNameForValue(result) ==
             variableNames->getNameForValue(operand)) {
       // This occurs in cases where the loop is inserting into a tensor and
-      // passing it along as an inter arg.
+      // passing it along as an iter arg.
       continue;
     }
 
@@ -584,6 +625,50 @@ LogicalResult OpenFhePkeEmitter::printOperation(scf::ForOp op) {
   return success();
 }
 
+LogicalResult OpenFhePkeEmitter::printOperation(scf::ForallOp op) {
+  // Use OMP for parallelization
+  // #pragma omp parallel for
+  os << "#pragma omp parallel for\n";
+
+  for (auto result : op.getResults()) {
+    OpOperand* opOperand = op.getTiedOpOperand(result);
+    BlockArgument blockArg = op.getTiedBlockArgument(opOperand);
+
+    // Map the block argument and the result to the opOperand name.
+    variableNames->mapValueNameToValue(blockArg, opOperand->get());
+    variableNames->mapValueNameToValue(result, opOperand->get());
+  }
+
+  // Later, support for multi-dimensional forall loops. It's pretty unlikely
+  // there would be a multi-dimensional use case (for iterating over multiple
+  // vectorized operands).
+  if (op.getInductionVars().size() > 1) {
+    return op.emitOpError() << "Only 1D forall loops are supported";
+  }
+  os << llvm::formatv("for (auto {0} = {1}; {0} < {2}; ++{0}) {{\n",
+                      variableNames->getNameForValue(op.getInductionVar(0)),
+                      op.getStaticLowerBound()[0], op.getStaticUpperBound()[0]);
+  os.indent();
+  for (Operation& op : *op.getBody()) {
+    if (failed(translate(op))) {
+      return op.emitOpError() << "Failed to translate forall loop block";
+    }
+  }
+
+  os.unindent();
+  os << "}\n";
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(scf::InParallelOp op) {
+  for (Operation& op : *op.getBody()) {
+    if (failed(translate(op))) {
+      return op.emitOpError() << "Failed to translate in parallel block";
+    }
+  }
+  return success();
+}
+
 LogicalResult OpenFhePkeEmitter::printOperation(scf::YieldOp op) {
   // Assume all yielded loop values have already been assigned.
   if (auto ifOp = dyn_cast<scf::IfOp>(op->getParentOp())) {
@@ -601,13 +686,24 @@ LogicalResult OpenFhePkeEmitter::printOperation(scf::YieldOp op) {
 
 void OpenFhePkeEmitter::emitAutoAssignPrefix(Value result) {
   // If the result values are iter args of a region, then avoid using a auto
-  // assign prefix.
-  if (!mutableValues.contains(result)) {
-    //  Use const auto& because most OpenFHE API methods would
-    // perform a copy if using a plain `auto`.
-    os << "const auto& ";
+  // assign prefix. Prefer auto& or const auto& because most OpenFHE API methods
+  // would perform a copy if using a plain `auto`.
+  bool canBeConst = !mutableValues.contains(result) &&
+                    constQualifierAnalysis->canBeMarkedConst(result);
+
+  if (canBeConst) {
+    // Even if the result is a temporary, you can declare it as `const auto&`;
+    // E.g., an EvalMult where the method returns a temporary value, and we
+    // don't want to copy it, and it's not used for in-place ops later.
+    os << "const auto&";
+  } else {
+    // makes a copy; e.g., EvalMult where the result is mutated in place later.
+    // Most OpenFHE ops return a temporary which cannot be used as a reference
+    // without also marking it as const, so a copy is the only way forward.
+    os << "auto";
   }
-  os << variableNames->getNameForValue(result) << " = ";
+
+  os << " " << variableNames->getNameForValue(result) << " = ";
 }
 
 LogicalResult OpenFhePkeEmitter::emitTypedAssignPrefix(Value result,
@@ -627,7 +723,17 @@ LogicalResult OpenFhePkeEmitter::printEvalMethod(
     ::mlir::Value result, ::mlir::Value cryptoContext,
     ::mlir::ValueRange nonEvalOperands, std::string_view op) {
   emitAutoAssignPrefix(result);
+  os << variableNames->getNameForValue(cryptoContext) << "->" << op << "(";
+  os << commaSeparatedValues(nonEvalOperands, [&](Value value) {
+    return variableNames->getNameForValue(value);
+  });
+  os << ");\n";
+  return success();
+}
 
+LogicalResult OpenFhePkeEmitter::printEvalInPlaceMethod(
+    ::mlir::Value result, ::mlir::Value cryptoContext,
+    ::mlir::ValueRange nonEvalOperands, std::string_view op) {
   os << variableNames->getNameForValue(cryptoContext) << "->" << op << "(";
   os << commaSeparatedValues(nonEvalOperands, [&](Value value) {
     return variableNames->getNameForValue(value);
@@ -737,12 +843,40 @@ LogicalResult OpenFhePkeEmitter::printOperation(FastRotationPrecomputeOp op) {
 }
 
 LogicalResult OpenFhePkeEmitter::printOperation(FastRotationOp op) {
+  auto getConstantOrValue = [&](Value value) -> std::string {
+    return getStringForConstant(value).value_or(
+        variableNames->getNameForValue(value));
+  };
+
   emitAutoAssignPrefix(op.getResult());
   os << variableNames->getNameForValue(op.getCryptoContext()) << "->"
      << "EvalFastRotation(" << variableNames->getNameForValue(op.getInput())
-     << ", " << op.getIndex().getZExtValue() << ", "
+     << ", " << getConstantOrValue(op.getIndex()) << ", "
      << "2 * cc->GetRingDimension(), "
      << variableNames->getNameForValue(op.getPrecomputedDigitDecomp())
+     << ");\n";
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(FastRotationExtOp op) {
+  auto getConstantOrValue = [&](Value value) -> std::string {
+    return getStringForConstant(value).value_or(
+        variableNames->getNameForValue(value));
+  };
+
+  emitAutoAssignPrefix(op.getResult());
+  os << variableNames->getNameForValue(op.getCryptoContext()) << "->"
+     << "EvalFastRotationExt(" << variableNames->getNameForValue(op.getInput())
+     << ", " << getConstantOrValue(op.getIndex()) << ", "
+     << variableNames->getNameForValue(op.getPrecomputedDigitDecomp()) << ", "
+     << (op.getAddFirst() ? "true" : "false") << ");\n";
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(KeySwitchDownOp op) {
+  emitAutoAssignPrefix(op.getResult());
+  os << variableNames->getNameForValue(op.getCryptoContext()) << "->"
+     << "KeySwitchDown(" << variableNames->getNameForValue(op.getCiphertext())
      << ");\n";
   return success();
 }
@@ -764,7 +898,8 @@ LogicalResult OpenFhePkeEmitter::printOperation(AutomorphOp op) {
   // call if it becomes necessary.
   std::string mapName =
       variableNames->getNameForValue(op.getResult()) + "evalkeymap";
-  auto result = convertType(op.getEvalKey().getType(), op->getLoc());
+  auto result =
+      convertType(op.getEvalKey().getType(), op->getLoc(), /*constant=*/true);
   os << "std::map<uint32_t, " << result << "> " << mapName << " = {{0, "
      << variableNames->getNameForValue(op.getEvalKey()) << "}};\n";
 
@@ -786,6 +921,93 @@ LogicalResult OpenFhePkeEmitter::printOperation(BootstrapOp op) {
                          {op.getCiphertext()}, "EvalBootstrap");
 }
 
+// InPlace methods
+LogicalResult OpenFhePkeEmitter::printOperation(AddInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getLhs(), op.getRhs()}, "EvalAddInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getLhs());
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(AddPlainInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getLhs(), op.getRhs()}, "EvalAddInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getLhs());
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(KeySwitchInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getCiphertext(), op.getEvalKey()},
+                               "KeySwitchInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getCiphertext());
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(LevelReduceInPlaceOp op) {
+  os << variableNames->getNameForValue(op.getCryptoContext()) << "->"
+     << "LevelReduceInPlace" << "(";
+  os << commaSeparatedValues({op.getCiphertext()}, [&](Value value) {
+    return variableNames->getNameForValue(value);
+  });
+  os << ", nullptr, ";
+  os << op.getLevelToDrop() << ");\n";
+  variableNames->mapValueNameToValue(op.getResult(), op.getCiphertext());
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(ModReduceInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getCiphertext()}, "ModReduceInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getCiphertext());
+  return success();
+}
+
+// This one is weird: mul_const has an in-place option, but not ct-ct mul or
+// ct-pt mul.
+LogicalResult OpenFhePkeEmitter::printOperation(MulConstInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getCiphertext(), op.getConstant()},
+                               "EvalMultInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getCiphertext());
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(NegateInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getCiphertext()}, "EvalNegateInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getCiphertext());
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(RelinInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getCiphertext()}, "RelinearizeInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getCiphertext());
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(SquareInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getCiphertext()}, "EvalSquareInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getCiphertext());
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(SubInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getLhs(), op.getRhs()}, "EvalSubInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getLhs());
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(SubPlainInPlaceOp op) {
+  (void)printEvalInPlaceMethod(op.getResult(), op.getCryptoContext(),
+                               {op.getLhs(), op.getRhs()}, "EvalSubInPlace");
+  variableNames->mapValueNameToValue(op.getResult(), op.getCiphertext());
+  return success();
+}
+
 LogicalResult OpenFhePkeEmitter::printOperation(arith::ConstantOp op) {
   auto valueAttr = op.getValue();
   if (auto intAttr = dyn_cast<IntegerAttr>(valueAttr)) {
@@ -797,7 +1019,10 @@ LogicalResult OpenFhePkeEmitter::printOperation(arith::ConstantOp op) {
       return failure();
     }
     os << intAttr.getValue() << ";\n";
-  } else if (auto floatAttr = dyn_cast<FloatAttr>(valueAttr)) {
+    return success();
+  }
+
+  if (auto floatAttr = dyn_cast<FloatAttr>(valueAttr)) {
     if (failed(emitTypedAssignPrefix(op.getResult(), op->getLoc()))) {
       return failure();
     }
@@ -808,7 +1033,17 @@ LogicalResult OpenFhePkeEmitter::printOperation(arith::ConstantOp op) {
           llvm::formatv("Failed to print floatAttr {0}", floatAttr));
     }
     os << floatStr.value() << ";\n";
-  } else if (auto denseElementsAttr = dyn_cast<DenseElementsAttr>(valueAttr)) {
+    return success();
+  }
+
+  DenseElementsAttr denseElementsAttr = dyn_cast<DenseElementsAttr>(valueAttr);
+  if (auto denseResourceAttr = dyn_cast<DenseResourceElementsAttr>(valueAttr)) {
+    const auto data = denseResourceAttr.getData();
+    denseElementsAttr =
+        DenseElementsAttr::getFromRawBuffer(denseResourceAttr.getType(), data);
+  }
+
+  if (denseElementsAttr) {
     // Prints all dense elements attribute as a flattened vector.
     ShapedType flattenedType =
         RankedTensorType::get({denseElementsAttr.getNumElements()},
@@ -845,11 +1080,9 @@ LogicalResult OpenFhePkeEmitter::printOperation(arith::ConstantOp op) {
       os << " = " << result.value() << ";\n";
     }
     return success();
-  } else {
-    return op.emitError() << "Unsupported constant type "
-                          << valueAttr.getType();
   }
-  return success();
+
+  return op.emitError() << "Unsupported constant type " << valueAttr.getType();
 }
 
 LogicalResult OpenFhePkeEmitter::printOperation(arith::ExtSIOp op) {
@@ -863,6 +1096,12 @@ LogicalResult OpenFhePkeEmitter::printOperation(arith::ExtSIOp op) {
   if (auto tensorTy = dyn_cast<RankedTensorType>(op.getOperand().getType())) {
     os << "std::vector<int64_t> " << resultVarName << "(std::begin("
        << inputVarName << "), std::end(" << inputVarName << "));\n";
+  } else if (auto intTy = dyn_cast<IntegerType>(op.getOperand().getType())) {
+    // This is an i1 type, so the assignment implicitly casts it to an int.
+    if (failed(emitTypedAssignPrefix(op.getResult(), op.getLoc()))) {
+      return failure();
+    }
+    os << inputVarName << ";\n";
   } else {
     return op.emitOpError() << "Unsupported input type";
   }
@@ -950,6 +1189,31 @@ LogicalResult OpenFhePkeEmitter::printBinaryOp(Operation* op, ::mlir::Value lhs,
                                                ::mlir::Value rhs,
                                                std::string_view opName) {
   assert(op->getNumResults() == 1 && "Expected single-result op!");
+  auto resultType = op->getResult(0).getType();
+  // Tensor case: loop and apply binop to each element.
+  if (auto tensorType = dyn_cast<RankedTensorType>(resultType)) {
+    auto numElements = tensorType.getNumElements();
+    // std::vector<std::vector<ty>> result(size);
+    if (failed(emitType(resultType, op->getLoc()))) {
+      return failure();
+    }
+    os << " " << variableNames->getNameForValue(op->getResult(0)) << "("
+       << numElements << ");\n";
+
+    // for (int i = 0; i < size; ++i) {
+    //   result[i] = lhs[i] op rhs[i];
+    // }
+    os << "for (int i = 0; i < " << numElements << "; ++i) {\n";
+    os.indent();
+    os << variableNames->getNameForValue(op->getResult(0))
+       << "[i] = " << variableNames->getNameForValue(lhs) << "[i] " << opName
+       << " " << variableNames->getNameForValue(rhs) << "[i];\n";
+    os.unindent();
+    os << "}\n";
+    return success();
+  }
+
+  // Scalar version
   if (failed(emitTypedAssignPrefix(op->getResult(0), op->getLoc(), true)))
     return failure();
   os << variableNames->getNameForValue(lhs) << " " << opName << " "
@@ -968,6 +1232,10 @@ LogicalResult OpenFhePkeEmitter::printOperation(arith::AddFOp op) {
 
 LogicalResult OpenFhePkeEmitter::printOperation(arith::AndIOp op) {
   return printBinaryOp(op, op.getLhs(), op.getRhs(), "&&");
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(arith::MulFOp op) {
+  return printBinaryOp(op, op.getLhs(), op.getRhs(), "*");
 }
 
 LogicalResult OpenFhePkeEmitter::printOperation(arith::MulIOp op) {
@@ -1016,6 +1284,22 @@ LogicalResult OpenFhePkeEmitter::printOperation(arith::CmpIOp op) {
       return printBinaryOp(op, op.getLhs(), op.getRhs(), ">=");
   }
   llvm_unreachable("unknown cmpi predicate kind");
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(arith::MaxSIOp op) {
+  if (failed(emitTypedAssignPrefix(op.getResult(), op.getLoc(), true)))
+    return failure();
+  os << "std::max(" << variableNames->getNameForValue(op.getLhs()) << ", "
+     << variableNames->getNameForValue(op.getRhs()) << ");\n";
+  return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(arith::MinSIOp op) {
+  if (failed(emitTypedAssignPrefix(op.getResult(), op.getLoc(), true)))
+    return failure();
+  os << "std::min(" << variableNames->getNameForValue(op.getLhs()) << ", "
+     << variableNames->getNameForValue(op.getRhs()) << ");\n";
+  return success();
 }
 
 LogicalResult OpenFhePkeEmitter::printOperation(tensor::ConcatOp op) {
@@ -1081,7 +1365,7 @@ LogicalResult OpenFhePkeEmitter::printOperation(tensor::EmptyOp op) {
 LogicalResult OpenFhePkeEmitter::printOperation(tensor::ExtractOp op) {
   // Recall, tensors in this emitter are all flattened.
   // const auto& v1 = in[0];
-  if (isa<lwe::LWECiphertextType>(op.getResult().getType())) {
+  if (isa<CiphertextType>(op.getResult().getType())) {
     emitAutoAssignPrefix(op.getResult());
   } else {
     if (failed(emitTypedAssignPrefix(op.getResult(), op.getLoc(), true)))
@@ -1094,8 +1378,7 @@ LogicalResult OpenFhePkeEmitter::printOperation(tensor::ExtractOp op) {
         auto constantStr = getStringForConstant(value);
         return constantStr.value_or(variableNames->getNameForValue(value));
       });
-  os << "]";
-  os << ";\n";
+  os << "];\n";
   return success();
 }
 
@@ -1263,6 +1546,45 @@ LogicalResult OpenFhePkeEmitter::printOperation(tensor::InsertSliceOp op) {
   return success();
 }
 
+LogicalResult OpenFhePkeEmitter::printOperation(
+    tensor::ParallelInsertSliceOp op) {
+  RankedTensorType resultType = op.getDest().getType();
+  std::string destName = variableNames->getNameForValue(op.getDest());
+
+  // We could relax this by using previously declared SSA values for dynamic
+  // offsets, sizes, and strides. But we have no use for it yet and I'm facing
+  // a deadline, baby!
+  if (op.getStaticOffsets().empty() || op.getStaticSizes().empty() ||
+      op.getStaticStrides().empty()) {
+    return op.emitError() << "expected static offsets, sizes, and strides";
+  }
+
+  std::string sourceName = variableNames->getNameForValue(op.getSource());
+
+  // If we have a 1D source and target tensor, and the strides are 1,
+  // we can use an assignment or a std::copy
+  //
+  // std::copy(source.begin(), source.end(), result.begin() + offset);
+  if (resultType.getRank() == 1 && op.getSourceType().getRank() == 1 &&
+      llvm::all_of(op.getStaticStrides(),
+                   [](int64_t stride) { return stride == 1; })) {
+    if (op.getStaticSizes()[0] == 1) {
+      auto offset = variableNames->getNameForValue(op.getOffsets()[0]);
+      os << destName << "[" << offset << "] = " << sourceName << "[0];\n";
+    } else {
+      os << "std::copy(";
+      os << sourceName << ".begin(), ";
+      os << sourceName << ".end(), ";
+      os << destName << ".begin() + " << op.getStaticOffsets()[0] << ");\n";
+    }
+    return success();
+  }
+
+  // A multi-dimensional parallel insert slice is unlikely to happen, since we
+  // currently only parallelize operations with a single result.
+  return failure();
+}
+
 LogicalResult OpenFhePkeEmitter::printOperation(tensor::InsertOp op) {
   // For a tensor.insert MLIR statement, we assign the destination vector and
   // then map the result value to the destination value.
@@ -1308,13 +1630,6 @@ LogicalResult OpenFhePkeEmitter::printOperation(tensor::FromElementsOp op) {
   os << "{" << commaSeparatedValues(op.getElements(), [&](Value value) {
     return variableNames->getNameForValue(value);
   }) << "};\n";
-  return success();
-}
-
-LogicalResult OpenFhePkeEmitter::printOperation(
-    lwe::ReinterpretApplicationDataOp op) {
-  emitAutoAssignPrefix(op.getResult());
-  os << variableNames->getNameForValue(op.getInput()) << ";\n";
   return success();
 }
 
@@ -1429,27 +1744,26 @@ FailureOr<std::pair<unsigned, int64_t>> getNonUnitDimension(
   return std::make_pair(nonUnitIndex, shape[nonUnitIndex]);
 }
 
-LogicalResult OpenFhePkeEmitter::printOperation(lwe::RLWEDecodeOp op) {
+LogicalResult OpenFhePkeEmitter::decodeCore(Location loc, Value input,
+                                            Value result, bool isCKKS) {
   // In OpenFHE a plaintext is already decoded by decrypt. The internal
   // OpenFHE implementation is simple enough (and dependent on
   // currently-hard-coded encoding choices) that we will eventually need to
   // work at a lower level of the API to support this operation properly.
-  bool isCKKS = llvm::isa<lwe::InverseCanonicalEncodingAttr>(op.getEncoding());
-  auto tensorTy = dyn_cast<RankedTensorType>(op.getResult().getType());
+  auto tensorTy = dyn_cast<RankedTensorType>(result.getType());
   if (tensorTy) {
     auto nonUnitDim = getNonUnitDimension(tensorTy);
     if (failed(nonUnitDim)) {
-      return emitError(op.getLoc(), "Only 1D tensors supported");
+      return emitError(loc, "Only 1D tensors supported");
     }
     // OpenFHE plaintexts must be manually resized to the decoded output size
     // via plaintext->SetLength(<size>);
     auto size = nonUnitDim.value().second;
-    auto inputVarName = variableNames->getNameForValue(op.getInput());
+    auto inputVarName = variableNames->getNameForValue(input);
     os << inputVarName << "->SetLength(" << size << ");\n";
 
     // Get the packed values in OpenFHE's type (vector of int_64t/complex/etc)
-    std::string tmpVar =
-        variableNames->getNameForValue(op.getResult()) + "_cast";
+    std::string tmpVar = variableNames->getNameForValue(result) + "_cast";
     os << "const auto& " << tmpVar << " = ";
     if (isCKKS) {
       os << inputVarName << "->GetCKKSPackedValue();\n";
@@ -1458,8 +1772,8 @@ LogicalResult OpenFhePkeEmitter::printOperation(lwe::RLWEDecodeOp op) {
     }
 
     // Convert to the intended type defined by the program
-    auto outputVarName = variableNames->getNameForValue(op.getResult());
-    if (failed(emitType(tensorTy, op->getLoc()))) {
+    auto outputVarName = variableNames->getNameForValue(result);
+    if (failed(emitType(tensorTy, loc))) {
       return failure();
     }
     if (isCKKS) {
@@ -1478,15 +1792,25 @@ LogicalResult OpenFhePkeEmitter::printOperation(lwe::RLWEDecodeOp op) {
   }
 
   // By convention, a plaintext stores a scalar value in index 0
-  auto result = emitTypedAssignPrefix(op.getResult(), op->getLoc());
-  if (failed(result)) return result;
-  os << variableNames->getNameForValue(op.getInput());
+  auto res = emitTypedAssignPrefix(result, loc);
+  if (failed(res)) return res;
+  os << variableNames->getNameForValue(input);
   if (isCKKS) {
     os << "->GetCKKSPackedValue()[0].real();\n";
   } else {
     os << "->GetPackedValue()[0];\n";
   }
   return success();
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(DecodeOp op) {
+  return decodeCore(op.getLoc(), op.getInput(), op.getResult(),
+                    /*isCKKS=*/false);
+}
+
+LogicalResult OpenFhePkeEmitter::printOperation(DecodeCKKSOp op) {
+  return decodeCore(op.getLoc(), op.getInput(), op.getResult(),
+                    /*isCKKS=*/true);
 }
 
 LogicalResult OpenFhePkeEmitter::printOperation(EncryptOp op) {
@@ -1642,14 +1966,15 @@ LogicalResult OpenFhePkeEmitter::emitType(Type type, Location loc,
   return success();
 }
 
-OpenFhePkeEmitter::OpenFhePkeEmitter(raw_ostream& os,
-                                     SelectVariableNames* variableNames,
-                                     const OpenfheImportType& importType,
-                                     const std::string& weightsFile,
-                                     bool skipVectorResizing)
+OpenFhePkeEmitter::OpenFhePkeEmitter(
+    raw_ostream& os, SelectVariableNames* variableNames,
+    ConstQualifierAnalysis* constQualifierAnalysis,
+    const OpenfheImportType& importType, const std::string& weightsFile,
+    bool skipVectorResizing)
     : importType_(importType),
       os(os),
       variableNames(variableNames),
+      constQualifierAnalysis(constQualifierAnalysis),
       weightsFile_(weightsFile),
       skipVectorResizing_(skipVectorResizing) {}
 }  // namespace openfhe

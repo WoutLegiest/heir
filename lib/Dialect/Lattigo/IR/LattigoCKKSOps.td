@@ -3,6 +3,8 @@
 
 include "LattigoDialect.td"
 include "LattigoTypes.td"
+include "mlir/Interfaces/InferTypeOpInterface.td"
+include "lib/Dialect/HEIRInterfaces.td"
 include "mlir/IR/OpBase.td"
 
 class Lattigo_CKKSOp<string mnemonic, list<Trait> traits = []> :
@@ -42,7 +44,7 @@ def Lattigo_CKKSNewEncoderOp : Lattigo_CKKSOp<"new_encoder"> {
   let results = (outs Lattigo_CKKSEncoder:$encoder);
 }
 
-def Lattigo_CKKSEncodeOp : Lattigo_CKKSOp<"encode", [InplaceOpInterface]> {
+def Lattigo_CKKSEncodeOp : Lattigo_CKKSOp<"encode", [InPlaceOpInterface]> {
   let summary = "Encode a plaintext value in the Lattigo CKKS dialect";
   let description = [{
     This operation encodes a plaintext value using the specified encoder in the Lattigo CKKS dialect.
@@ -59,7 +61,7 @@ def Lattigo_CKKSEncodeOp : Lattigo_CKKSOp<"encode", [InplaceOpInterface]> {
   );
   let results = (outs Lattigo_RLWEPlaintext:$encoded);
 
-  let extraClassDeclaration = "int getInplaceOperandIndex() { return 2; }";
+  let extraClassDeclaration = "int getInPlaceOperandIndex() { return 2; }";
 }
 
 def Lattigo_CKKSDecodeOp : Lattigo_CKKSOp<"decode", [AllTypesMatch<["value", "decoded"]>]> {
@@ -97,10 +99,48 @@ def Lattigo_CKKSNewEvaluatorOp : Lattigo_CKKSOp<"new_evaluator"> {
   let results = (outs Lattigo_CKKSEvaluator:$evaluator);
 }
 
+def Lattigo_CKKSNewBootstrappingParametersFromLiteralOp : Lattigo_CKKSOp<"new_bootstrapping_parameters_from_literal"> {
+  let summary = "Create new CKKS bootstrapping parameters from a literal in the Lattigo CKKS dialect";
+  let description = [{
+    This operation creates new CKKS bootstrapping parameters from a given literal value in the Lattigo CKKS dialect.
+  }];
+  let arguments = (ins
+    Lattigo_CKKSParameter:$params,
+    Lattigo_CKKSBootstrappingParametersLiteral:$btParamsLiteral
+  );
+  let results = (outs Lattigo_CKKSBootstrappingParameter:$output);
+}
+
+def Lattigo_CKKSGenEvaluationKeysBootstrappingOp : Lattigo_CKKSOp<"gen_evaluation_keys_bootstrapping"> {
+  let summary = "Create new evaluation keys for CKKS bootstrapping";
+  let arguments = (ins
+    Lattigo_CKKSBootstrappingParameter:$params,
+    Lattigo_RLWESecretKey:$sk
+  );
+  let results = (outs Lattigo_CKKSBootstrappingEvaluationKeys:$output);
+}
+
+def Lattigo_CKKSNewBootstrappingEvaluatorOp : Lattigo_CKKSOp<"new_bootstrapping_evaluator"> {
+  let summary = "Create a new bootstrapping evaluator in the Lattigo CKKS dialect";
+  let description = [{
+    Creates a new bootstrapping evaluator for performing operations on
+    ciphertexts in the Lattigo CKKS dialect.
+
+    By default, the evaluator is created with default parameters to provide a
+    depth of 15 and security level of 128. The evaluation key set for
+    bootstrapping must be provided.
+  }];
+  let arguments = (ins
+    Lattigo_CKKSBootstrappingParameter:$params,
+    Lattigo_CKKSBootstrappingEvaluationKeys:$evaluationKeySet
+  );
+  let results = (outs Lattigo_CKKSBootstrappingEvaluator:$evaluator);
+}
+
 // ciphertext arithmetic op
 
-class Lattigo_CKKSBinaryOp<string mnemonic> :
-        Lattigo_CKKSOp<mnemonic> {
+class Lattigo_CKKSBinaryOp<string mnemonic, list<Trait> traits = []> :
+        Lattigo_CKKSOp<mnemonic, traits> {
   let arguments = (ins
     Lattigo_CKKSEvaluator:$evaluator,
     Lattigo_RLWECiphertext:$lhs,
@@ -123,15 +163,15 @@ def Lattigo_CKKSSubNewOp : Lattigo_CKKSBinaryOp<"sub_new"> {
   }];
 }
 
-def Lattigo_CKKSMulNewOp : Lattigo_CKKSBinaryOp<"mul_new"> {
+def Lattigo_CKKSMulNewOp : Lattigo_CKKSBinaryOp<"mul_new", [IncreasesMulDepthOpInterface]> {
   let summary = "Multiply two ciphertexts in the Lattigo CKKS dialect";
   let description = [{
     This operation multiplies two ciphertext values in the Lattigo CKKS dialect.
   }];
 }
 
-class Lattigo_CKKSBinaryInplaceOp<string mnemonic> :
-        Lattigo_CKKSOp<mnemonic, [InplaceOpInterface]> {
+class Lattigo_CKKSBinaryInPlaceOp<string mnemonic, list<Trait> traits = []> :
+        Lattigo_CKKSOp<mnemonic, traits # [InPlaceOpInterface]> {
   let arguments = (ins
     Lattigo_CKKSEvaluator:$evaluator,
     Lattigo_RLWECiphertext:$lhs,
@@ -142,10 +182,10 @@ class Lattigo_CKKSBinaryInplaceOp<string mnemonic> :
   );
   let results = (outs Lattigo_RLWECiphertext:$output);
 
-  let extraClassDeclaration = "int getInplaceOperandIndex() { return 3; }";
+  let extraClassDeclaration = "int getInPlaceOperandIndex() { return 3; }";
 }
 
-def Lattigo_CKKSAddOp : Lattigo_CKKSBinaryInplaceOp<"add"> {
+def Lattigo_CKKSAddOp : Lattigo_CKKSBinaryInPlaceOp<"add"> {
   let summary = "Add two ciphertexts in the Lattigo CKKS dialect";
   let description = [{
     This operation adds two ciphertext values in the Lattigo CKKS dialect.
@@ -155,7 +195,7 @@ def Lattigo_CKKSAddOp : Lattigo_CKKSBinaryInplaceOp<"add"> {
   }];
 }
 
-def Lattigo_CKKSSubOp : Lattigo_CKKSBinaryInplaceOp<"sub"> {
+def Lattigo_CKKSSubOp : Lattigo_CKKSBinaryInPlaceOp<"sub"> {
   let summary = "Subtract two ciphertexts in the Lattigo CKKS dialect";
   let description = [{
     This operation subtracts one ciphertext value from another in the Lattigo CKKS dialect.
@@ -165,7 +205,7 @@ def Lattigo_CKKSSubOp : Lattigo_CKKSBinaryInplaceOp<"sub"> {
   }];
 }
 
-def Lattigo_CKKSMulOp : Lattigo_CKKSBinaryInplaceOp<"mul"> {
+def Lattigo_CKKSMulOp : Lattigo_CKKSBinaryInPlaceOp<"mul", [IncreasesMulDepthOpInterface]> {
   let summary = "Multiply two ciphertexts in the Lattigo CKKS dialect";
   let description = [{
     This operation multiplies two ciphertext values in the Lattigo CKKS dialect.
@@ -217,20 +257,20 @@ def Lattigo_CKKSRotateNewOp : Lattigo_CKKSOp<"rotate_new"> {
   let results = (outs Lattigo_RLWECiphertext:$output);
 }
 
-class Lattigo_CKKSUnaryInplaceOp<string mnemonic> :
-        Lattigo_CKKSOp<mnemonic, [InplaceOpInterface]> {
+class Lattigo_CKKSUnaryInPlaceOp<string mnemonic> :
+        Lattigo_CKKSOp<mnemonic, [InPlaceOpInterface]> {
   let arguments = (ins
     Lattigo_CKKSEvaluator:$evaluator,
     Lattigo_RLWECiphertext:$input,
-    // see BinaryInplaceOp above
+    // see BinaryInPlaceOp above
     Lattigo_RLWECiphertext:$inplace
   );
   let results = (outs Lattigo_RLWECiphertext:$output);
 
-  let extraClassDeclaration = "int getInplaceOperandIndex() { return 2; }";
+  let extraClassDeclaration = "int getInPlaceOperandIndex() { return 2; }";
 }
 
-def Lattigo_CKKSRelinearizeOp : Lattigo_CKKSUnaryInplaceOp<"relinearize"> {
+def Lattigo_CKKSRelinearizeOp : Lattigo_CKKSUnaryInPlaceOp<"relinearize"> {
   let summary = "Relinearize a ciphertext in the Lattigo CKKS dialect";
   let description = [{
     This operation relinearizes a ciphertext value in the Lattigo CKKS dialect.
@@ -240,7 +280,7 @@ def Lattigo_CKKSRelinearizeOp : Lattigo_CKKSUnaryInplaceOp<"relinearize"> {
   }];
 }
 
-def Lattigo_CKKSRescaleOp : Lattigo_CKKSUnaryInplaceOp<"rescale"> {
+def Lattigo_CKKSRescaleOp : Lattigo_CKKSUnaryInPlaceOp<"rescale"> {
   let summary = "Rescale a ciphertext in the Lattigo CKKS dialect";
   let description = [{
     This operation rescales a ciphertext value in the Lattigo CKKS dialect.
@@ -250,7 +290,7 @@ def Lattigo_CKKSRescaleOp : Lattigo_CKKSUnaryInplaceOp<"rescale"> {
   }];
 }
 
-def Lattigo_CKKSRotateOp : Lattigo_CKKSUnaryInplaceOp<"rotate"> {
+def Lattigo_CKKSRotateOp : Lattigo_CKKSUnaryInPlaceOp<"rotate"> {
   let summary = "Rotate slots of a ciphertext in the Lattigo CKKS dialect";
   let description = [{
     This operation rotates slots of a ciphertext value in the Lattigo CKKS dialect.
@@ -267,9 +307,28 @@ def Lattigo_CKKSRotateOp : Lattigo_CKKSUnaryInplaceOp<"rotate"> {
   let arguments = (ins
     Lattigo_CKKSEvaluator:$evaluator,
     Lattigo_RLWECiphertext:$input,
-    // see BinaryInplaceOp above
+    // see BinaryInPlaceOp above
     Lattigo_RLWECiphertext:$inplace,
     Builtin_IntegerAttr:$offset
+  );
+  let results = (outs Lattigo_RLWECiphertext:$output);
+}
+
+def Lattigo_CKKSBootstrapOp : Lattigo_CKKSUnaryOp<"bootstrap"> {
+  let summary = "Bootstrap a ciphertext in the Lattigo CKKS dialect";
+  let description = [{
+    Bootstraps a ciphertext value in the Lattigo CKKS dialect.
+
+    The operation applies bootstrapping in-place and also returns the result.
+
+    It takes a ciphertext at level 0 (if not at level 0, then it will reduce it
+    to level 0) and returns a ciphertext with the max level of
+    `evaluator.ResidualParameters.MaxLevel`.
+  }];
+
+  let arguments = (ins
+    Lattigo_CKKSBootstrappingEvaluator:$evaluator,
+    Lattigo_RLWECiphertext:$input
   );
   let results = (outs Lattigo_RLWECiphertext:$output);
 }

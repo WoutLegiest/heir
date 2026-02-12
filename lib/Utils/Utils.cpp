@@ -5,15 +5,14 @@
 #include <cstdint>
 #include <iomanip>
 #include <ios>
-#include <map>
-#include <optional>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include "lib/Utils/MathUtils.h"
 #include "llvm/include/llvm/ADT/STLExtras.h"            // from @llvm-project
 #include "llvm/include/llvm/ADT/TypeSwitch.h"           // from @llvm-project
+#include "llvm/include/llvm/Support/Casting.h"          // from @llvm-project
+#include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"   // from @llvm-project
 #include "mlir/include/mlir/Dialect/Func/IR/FuncOps.h"  // from @llvm-project
 #include "mlir/include/mlir/IR/Attributes.h"            // from @llvm-project
 #include "mlir/include/mlir/IR/Builders.h"              // from @llvm-project
@@ -22,6 +21,7 @@
 #include "mlir/include/mlir/IR/BuiltinTypeInterfaces.h"  // from @llvm-project
 #include "mlir/include/mlir/IR/Operation.h"              // from @llvm-project
 #include "mlir/include/mlir/IR/OperationSupport.h"       // from @llvm-project
+#include "mlir/include/mlir/IR/SymbolTable.h"            // from @llvm-project
 #include "mlir/include/mlir/IR/TypeUtilities.h"          // from @llvm-project
 #include "mlir/include/mlir/IR/Types.h"                  // from @llvm-project
 #include "mlir/include/mlir/IR/Value.h"                  // from @llvm-project
@@ -230,6 +230,47 @@ Operation* makeAppropriatelyTypedMulOp(OpBuilder& builder, Location loc,
                             : "arith.mulf";
   return builder.create(
       OperationState(loc, addOpName, {lhs, rhs}, {lhs.getType()}, attrs));
+}
+
+/// Returns true if and only if all types in the given values are the same.
+bool allTypesMatch(ArrayRef<Value> values) {
+  Type firstType = values.front().getType();
+  return llvm::all_of(
+      values, [&](Value value) { return value.getType() == firstType; });
+}
+
+/// Extends all (integer-typed) values to the largest bitwidth among them and
+/// returns the new list of values.
+SmallVector<Value> extendToCommonWidth(OpBuilder& b, ArrayRef<Value> values) {
+  int64_t maxWidth = 0;
+  for (Value value : values) {
+    auto intType = cast<IntegerType>(value.getType());
+    maxWidth = std::max(maxWidth, static_cast<int64_t>(intType.getWidth()));
+  }
+
+  SmallVector<Value> extendedValues;
+  extendedValues.reserve(values.size());
+  auto upcastType = IntegerType::get(b.getContext(), maxWidth);
+  for (Value value : values) {
+    auto intType = cast<IntegerType>(value.getType());
+    if (intType.getWidth() < maxWidth) {
+      extendedValues.push_back(
+          arith::ExtSIOp::create(b, value.getLoc(), upcastType, value));
+    } else {
+      extendedValues.push_back(value);
+    }
+  }
+  return extendedValues;
+}
+
+FailureOr<func::FuncOp> getCalledFunction(func::CallOp callOp) {
+  SymbolRefAttr sym =
+      llvm::dyn_cast_or_null<SymbolRefAttr>(callOp.getCallableForCallee());
+  if (!sym) return failure();
+  auto maybeFuncOp = dyn_cast_or_null<func::FuncOp>(
+      SymbolTable::lookupNearestSymbolFrom(callOp, sym));
+  if (!maybeFuncOp) return failure();
+  return maybeFuncOp;
 }
 
 }  // namespace heir

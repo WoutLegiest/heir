@@ -13,6 +13,8 @@
 #include "lib/Dialect/Lattigo/IR/LattigoTypes.h"
 #include "lib/Dialect/ModuleAttributes.h"
 #include "lib/Utils/TransformUtils.h"
+#include "lib/Utils/Utils.h"
+#include "llvm/include/llvm/ADT/TypeSwitch.h"           // from @llvm-project
 #include "llvm/include/llvm/Support/raw_ostream.h"      // from @llvm-project
 #include "mlir/include/mlir/Dialect/Func/IR/FuncOps.h"  // from @llvm-project
 #include "mlir/include/mlir/IR/BuiltinAttributes.h"     // from @llvm-project
@@ -25,6 +27,7 @@
 #include "mlir/include/mlir/IR/Value.h"                 // from @llvm-project
 #include "mlir/include/mlir/IR/Visitors.h"              // from @llvm-project
 #include "mlir/include/mlir/Support/LLVM.h"             // from @llvm-project
+#include "mlir/include/mlir/Support/WalkResult.h"       // from @llvm-project
 
 namespace mlir {
 namespace heir {
@@ -36,7 +39,7 @@ namespace lattigo {
 // Helper function to check if the function has RelinearizeOp
 bool hasRelinOp(func::FuncOp op) {
   bool result = false;
-  op.walk<WalkOrder::PreOrder>([&](Operation* op) {
+  walkFuncAndCallees(op, [&](Operation* op) {
     if (isa<BGVRelinearizeOp, BGVRelinearizeNewOp, CKKSRelinearizeOp,
             CKKSRelinearizeNewOp>(op)) {
       result = true;
@@ -47,24 +50,40 @@ bool hasRelinOp(func::FuncOp op) {
   return result;
 }
 
+// Helper function to check if the function has BootstrapOp
+bool hasBootstrapOp(func::FuncOp funcOp) {
+  auto result = walkFuncAndCallees(funcOp, [&](Operation* op) {
+    if (isa<lattigo::CKKSBootstrapOp>(op)) {
+      return WalkResult::interrupt();
+    }
+    return WalkResult::advance();
+  });
+  return result.wasInterrupted();
+}
+
 // Helper function to find all the rotation indices in the function
 // TODO(#1186): handle rotate rows
 SmallVector<int64_t> findAllRotIndices(func::FuncOp op) {
   std::set<int64_t> distinctRotIndices;
-  op.walk([&](BGVRotateColumnsNewOp rotOp) {
-    distinctRotIndices.insert(rotOp.getOffset().getInt());
-    return WalkResult::advance();
-  });
-  op.walk([&](BGVRotateColumnsOp rotOp) {
-    distinctRotIndices.insert(rotOp.getOffset().getInt());
-    return WalkResult::advance();
-  });
-  op.walk([&](CKKSRotateOp rotOp) {
-    distinctRotIndices.insert(rotOp.getOffset().getInt());
-    return WalkResult::advance();
-  });
-  op.walk([&](CKKSRotateNewOp rotOp) {
-    distinctRotIndices.insert(rotOp.getOffset().getInt());
+  walkFuncAndCallees(op, [&](Operation* op) {
+    llvm::TypeSwitch<Operation*>(op)
+        .Case<BGVRotateColumnsNewOp>([&](BGVRotateColumnsNewOp rotOp) {
+          distinctRotIndices.insert(rotOp.getOffset().getInt());
+          return WalkResult::advance();
+        })
+        .Case<BGVRotateColumnsOp>([&](BGVRotateColumnsOp rotOp) {
+          distinctRotIndices.insert(rotOp.getOffset().getInt());
+          return WalkResult::advance();
+        })
+        .Case<CKKSRotateOp>([&](CKKSRotateOp rotOp) {
+          distinctRotIndices.insert(rotOp.getOffset().getInt());
+          return WalkResult::advance();
+        })
+        .Case<CKKSRotateNewOp>([&](CKKSRotateNewOp rotOp) {
+          distinctRotIndices.insert(rotOp.getOffset().getInt());
+          return WalkResult::advance();
+        })
+        .Default([&](Operation* op) { return WalkResult::advance(); });
     return WalkResult::advance();
   });
   SmallVector<int64_t> rotIndicesResult(distinctRotIndices.begin(),
@@ -156,6 +175,7 @@ struct LattigoBGVScheme {
 
 struct LattigoCKKSScheme {
   using EvaluatorType = CKKSEvaluatorType;
+  using BootstrappingEvaluatorType = CKKSBootstrappingEvaluatorType;
   using ParameterType = CKKSParameterType;
   using EncoderType = CKKSEncoderType;
   using ParametersLiteralAttrType = CKKSParametersLiteralAttr;
@@ -196,6 +216,17 @@ struct LattigoCKKSScheme {
         /*logDefaultScale*/ 45);
   }
 
+  static CKKSBootstrappingParametersLiteralAttr
+  getBootstrappingParametersLiteralAttr(MLIRContext* ctx, Operation* moduleOp) {
+    auto schemeParamAttr = getSchemeParamAttr(moduleOp);
+    if (schemeParamAttr) {
+      auto logN = schemeParamAttr.getLogN();
+      return CKKSBootstrappingParametersLiteralAttr::get(ctx, logN);
+    }
+    return CKKSBootstrappingParametersLiteralAttr::get(
+        ctx, /*logN*/ getLogN(moduleOp));
+  }
+
   static SchemeParamAttrType getSchemeParamAttr(Operation* moduleOp) {
     return moduleOp->getAttrOfType<ckks::SchemeParamAttr>(
         ckks::CKKSDialect::kSchemeParamAttrName);
@@ -232,15 +263,23 @@ LogicalResult convertFuncForScheme(func::FuncOp op) {
   ImplicitLocOpBuilder builder =
       ImplicitLocOpBuilder::atBlockEnd(module.getLoc(), module.getBody());
 
-  // __configure() -> (evaluator, params, encoder, encryptor, decryptor)
+  // __configure() -> ((optional) bootstrapping evaluator, evaluator, params,
+  // encoder, encryptor, decryptor)
   SmallVector<Type> funcArgTypes;
   SmallVector<Type> funcResultTypes;
 
+  Type bootstrappingEvaluatorType =
+      CKKSBootstrappingEvaluatorType::get(builder.getContext());
   Type evaluatorType = EvaluatorType::get(builder.getContext());
   Type paramsType = ParameterType::get(builder.getContext());
   Type encoderType = EncoderType::get(builder.getContext());
   RLWEEncryptorType encryptorType = findEncryptorType(module);
   Type decryptorType = RLWEDecryptorType::get(builder.getContext());
+
+  bool hasBootstrap = hasBootstrapOp(op);
+  if (hasBootstrap) {
+    funcResultTypes.push_back(bootstrappingEvaluatorType);
+  }
   funcResultTypes.push_back(evaluatorType);
   funcResultTypes.push_back(paramsType);
   funcResultTypes.push_back(encoderType);
@@ -313,11 +352,23 @@ LogicalResult convertFuncForScheme(func::FuncOp op) {
   }
 
   // evalKeySet is optional so nulltpr is acceptable
+  SmallVector<Value> results;
+  if (hasBootstrap) {
+    auto ctx = builder.getContext();
+    auto btParamsLiteral =
+        LattigoCKKSScheme::getBootstrappingParametersLiteralAttr(ctx, moduleOp);
+    auto btParams = CKKSNewBootstrappingParametersFromLiteralOp::create(
+        builder, params, btParamsLiteral);
+    auto bEvalKeySet = lattigo::CKKSGenEvaluationKeysBootstrappingOp::create(
+        builder, btParams, sk);
+    auto bEval = lattigo::CKKSNewBootstrappingEvaluatorOp::create(
+        builder, btParams, bEvalKeySet);
+    results.push_back(bEval);
+  }
   Value evaluator =
       LattigoScheme::getNewEvaluatorOp(builder, params, evalKeySet);
 
-  SmallVector<Value> results = {evaluator, params, encoder, encryptor,
-                                decryptor};
+  results.append({evaluator, params, encoder, encryptor, decryptor});
   func::ReturnOp::create(builder, results);
   return success();
 }

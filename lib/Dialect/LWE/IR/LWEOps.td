@@ -1,6 +1,7 @@
 #ifndef LIB_DIALECT_LWE_IR_LWEOPS_TD_
 #define LIB_DIALECT_LWE_IR_LWEOPS_TD_
 
+include "lib/Dialect/HEIRInterfaces.td"
 include "lib/Dialect/LWE/IR/LWEDialect.td"
 include "lib/Dialect/LWE/IR/LWETraits.td"
 include "lib/Dialect/LWE/IR/LWETypes.td"
@@ -78,35 +79,31 @@ class LWE_CiphertextPlaintextOp<string mnemonic, list<Trait> traits = []> :
 }
 
 def LWE_EncodeOp : LWE_Op<"encode"> {
-  let summary = "Encode an integer to yield an LWE plaintext";
+  let summary = "Encodes a cleartext into a plaintext";
   let description = [{
-    Encode an integer to yield an LWE plaintext.
+    The `encode` op encodes a cleartext into a plaintext. It takes the
+    cleartext value and a parameter `plaintext_bits` describing how many
+    bits of the cleartext should be encoded into the plaintext.
 
-    This op uses an overflow attribute to indicate the overflow semantics. For
-    CGGI ciphertexts, this will typically be `preserve_overflow` to indicate
-    that the message bits can overflow into the carry bit space.
-
-    The LWE plaintext ring is constructed with a plaintext bit width using `plaintext_bits` and a
-    polynomial modulus of `x`.
+    The LWE plaintext ring is constructed with a plaintext bit width using
+    `plaintext_bits` and a polynomial modulus of `x`.
 
     Examples:
 
     ```
-    %Y = lwe.encode %value {overflow = #overflow, plaintext_bits = 3}: i1 to !lwe.lwe_plaintext<application_data = #app_data, plaintext_space = #space>
+    %Y = lwe.encode %value {plaintext_bits = 3}: i1 to !lwe.lwe_plaintext<plaintext_space = #space>
     ```
   }];
 
   let arguments = (ins
     SignlessIntegerOrFloatLike:$input,
-    IndexAttr:$plaintext_bits,
-    AnyOverflowAttr:$overflow
+    IndexAttr:$plaintext_bits
   );
 
   let results = (outs LWEPlaintext:$output);
   let assemblyFormat = "$input attr-dict `:` qualified(type($input)) `to` qualified(type($output))";
 
   // Verify that the input type and the application data are compatible.
-  // Verifies that the overflow attribute is one of preserve or no overflow.
   let hasVerifier = 1;
 }
 
@@ -160,7 +157,7 @@ def LWE_RSubPlainOp : LWE_CiphertextPlaintextOp<"rsub_plain", [SameOperandsAndRe
   let summary = "Subtraction between RLWE ciphertext-plaintext";
 }
 
-def LWE_RMulOp : LWE_BinOp<"rmul", [SameOperandsAndResultRings, InferTypeOpAdaptor, Commutative]> {
+def LWE_RMulOp : LWE_BinOp<"rmul", [SameOperandsAndResultRings, InferTypeOpAdaptor, Commutative, IncreasesMulDepthOpInterface]> {
   let summary = "Multiplies two RLWE ciphertexts";
   let assemblyFormat = [{
     operands attr-dict `:` functional-type(operands, results)
@@ -168,10 +165,17 @@ def LWE_RMulOp : LWE_BinOp<"rmul", [SameOperandsAndResultRings, InferTypeOpAdapt
   let hasVerifier = 1;
 }
 
-def LWE_RMulPlainOp : LWE_CiphertextPlaintextOp<"rmul_plain", [Commutative]> {
+def LWE_RMulPlainOp : LWE_CiphertextPlaintextOp<"rmul_plain", [Commutative, IncreasesMulDepthOpInterface]> {
   let summary = "Multiplication between RLWE ciphertext-plaintext";
   let hasVerifier = 1;
   let hasCanonicalizer = 1;
+}
+
+def LWE_RMulRingEltOp : LWE_Op<"mul_ring_elt", [AllTypesMatch<["rhs", "output"]>]> {
+  let summary = "Multiplication between an RLWE ring element and a ciphertext";
+  let arguments = (ins LWERingElt:$lhs, LWECiphertext:$rhs);
+  let results = (outs LWECiphertext:$output);
+  let hasVerifier = 1;
 }
 
 def LWE_RNegateOp : LWE_Op<"rnegate", [SameOperandsAndResultType, ElementwiseMappable]> {
@@ -265,22 +269,78 @@ def LWE_RLWEDecryptOp : LWE_Op<"rlwe_decrypt", [
   let results = (outs LWEPlaintext:$output);
 }
 
-def ReinterpretApplicationDataOp : LWE_Op<"reinterpret_application_data", [ElementwiseMappable]> {
-  let summary = "A placeholder cast from one ciphertext type to another";
+def LWE_ExtractCoeffOp : LWE_Op<"extract_coeff", [Pure, DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>]> {
+  let summary = "Extract a ciphertext component";
   let description = [{
-    The `cast` op is thus used to translate application data (e.g., `message_type`)
-    between ciphertexts in particular situations, such as when the bitwidth of the
-    message type changes, but this change is not observed in the plaintext space,
-    or when lowering to an API that does not keep track of types.
+    A ciphertext can be viewed as a polynomial in the indeterminant `S`,
+    the abstract secret key. For example, a ciphertext with two components
+    `[c0, c1]` represents the polynomial `c0 + c1 * S`. This op returns `c_i`.
   }];
-
-  let arguments = (ins LWECiphertextLike:$input);
-  let results = (outs LWECiphertextLike:$output);
-  let assemblyFormat = [{
-    $input attr-dict `:` qualified(type($input)) `to` qualified(type($output))
-  }];
-
+  let arguments = (ins
+      LWECiphertext:$value,
+      IndexAttr:$index
+  );
+  let results = (outs
+    LWERingElt:$output
+  );
   let hasVerifier = 1;
+  let assemblyFormat = "$value attr-dict `:` type($value)";
+}
+
+def LWE_FromCoeffsOp : LWE_Op<"from_coeffs", [Pure]> {
+  let summary = "Create a ciphertext from a vector of ring elements";
+  let description = [{
+    A ciphertext can be viewed as a polynomial in the indeterminant `S`,
+    the abstract secret key. For example, a ciphertext with two components
+    `[c0, c1]` represents the polynomial `c0 + c1 * S`. Given ring elements
+    `[c0, c1]`, this op returns the corresponding ciphertext.
+  }];
+  let arguments = (ins
+      Variadic<LWERingElt>:$coeffs
+  );
+  let results = (outs
+    LWECiphertext:$output
+  );
+  let hasVerifier = 1;
+}
+
+def LWE_ExtractSliceOp : LWE_Op<"extract_slice", [Pure, DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>]> {
+  let summary = "Extract a subset of the ring element's RNS basis";
+  let description = [{
+    Given a ring element an RNS basis with $k$ limbs, extract the slice of
+    RNS components, starting at `start` and having size `size`.
+
+    The result type is a ring element with RNS type containing the subset of basis types
+    corresponding to the extracted slice. This is useful for operations like
+    truncating or partitioning a modulus chain.
+  }];
+  let arguments = (ins
+      LWERingElt:$input,
+      IndexAttr:$start,
+      IndexAttr:$size
+  );
+  let results = (outs
+    LWERingElt:$output
+  );
+  let assemblyFormat = "$input attr-dict `:` type($input)";
+  let hasVerifier = 1;
+}
+
+def LWE_ConvertBasisOp : LWE_Op<"convert_basis", [Pure, DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>]> {
+  let summary = "Change a ring element's RNS basis";
+  let description = [{
+    Given a ring element with an RNS basis, output a ring element with the target
+    output basis. The output value is equivalent to lifting the ring element to its
+    centered representative over the integers, and reducing by the output modulus.
+  }];
+  let arguments = (ins
+      LWERingElt:$value,
+      TypeAttr:$targetBasis
+  );
+  let results = (outs
+    LWERingElt:$output
+  );
+  let assemblyFormat = "$value attr-dict `:` type($value)";
 }
 
 #endif  // LIB_DIALECT_LWE_IR_LWEOPS_TD_

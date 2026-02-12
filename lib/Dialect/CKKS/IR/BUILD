@@ -12,27 +12,42 @@ package(
 cc_library(
     name = "Dialect",
     srcs = [
+        "CKKSAttributes.cpp",
         "CKKSDialect.cpp",
         "CKKSOps.cpp",
     ],
     hdrs = [
         "CKKSAttributes.h",
         "CKKSDialect.h",
-        "CKKSEnums.h",
         "CKKSOps.h",
     ],
     deps = [
+        ":Enums",
         ":attributes_inc_gen",
         ":dialect_inc_gen",
-        ":enums_inc_gen",
         ":ops_inc_gen",
         "@heir//lib/Dialect:HEIRInterfaces",
         "@heir//lib/Dialect/LWE/IR:Dialect",
         "@heir//lib/Dialect/LWE/IR:Patterns",
+        "@heir//lib/Dialect/ModArith/IR:Dialect",
+        "@heir//lib/Dialect/Polynomial/IR:Dialect",
+        "@heir//lib/Dialect/RNS/IR:RNSTypes",
+        "@heir//lib/Parameters:RLWEParams",
+        "@heir//lib/Parameters/CKKS:Params",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:InferTypeOpInterface",
         "@llvm-project//mlir:Support",
+    ],
+)
+
+cc_library(
+    name = "Enums",
+    srcs = ["CKKSEnums.cpp"],
+    hdrs = ["CKKSEnums.h"],
+    deps = [
+        ":enums_inc_gen",
+        "@llvm-project//mlir:IR",
     ],
 )
 
@@ -70,6 +85,7 @@ add_heir_dialect_library(
         "@heir//lib/Dialect:td_files",
         "@heir//lib/Dialect/LWE/IR:td_files",
         "@heir//lib/Dialect/Polynomial/IR:td_files",
+        "@heir//lib/Parameters/CKKS:Params",
     ],
 )
 

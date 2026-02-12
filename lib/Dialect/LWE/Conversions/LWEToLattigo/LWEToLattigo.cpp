@@ -121,6 +121,20 @@ bool containsArgumentOfDialect(Operation* op) {
   });
 }
 
+bool containsBootstrap(Operation* op) {
+  auto funcOp = dyn_cast<func::FuncOp>(op);
+  if (!funcOp) {
+    return false;
+  }
+  auto result = walkFuncAndCallees(funcOp, [&](Operation* op) {
+    if (isa<ckks::BootstrapOp>(op)) {
+      return WalkResult::interrupt();
+    }
+    return WalkResult::advance();
+  });
+  return result.wasInterrupted();
+}
+
 struct AddEvaluatorArg : public OpConversionPattern<func::FuncOp> {
   AddEvaluatorArg(mlir::MLIRContext* context,
                   const std::vector<std::pair<Type, OpPredicate>>& evaluators)
@@ -401,6 +415,28 @@ struct ConvertRlweRotateOp : public OpConversionPattern<RlweRotateOp> {
   }
 };
 
+template <typename EvaluatorType, typename BootstrapOp,
+          typename LattigoBootstrapOp>
+struct ConvertRlweOpBootstrap : public OpConversionPattern<BootstrapOp> {
+  using OpConversionPattern<BootstrapOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(
+      BootstrapOp op, typename BootstrapOp::Adaptor adaptor,
+      ConversionPatternRewriter& rewriter) const override {
+    FailureOr<Value> result =
+        getContextualEvaluator<EvaluatorType>(op.getOperation());
+    if (failed(result)) return result;
+
+    Value evaluator = result.value();
+    rewriter.replaceOp(
+        op, LattigoBootstrapOp::create(
+                rewriter, op.getLoc(),
+                this->typeConverter->convertType(op.getOutput().getType()),
+                evaluator, adaptor.getInput()));
+    return success();
+  }
+};
+
 template <typename EvaluatorType, typename LevelReduceOp,
           typename LattigoLevelReduceOp>
 struct ConvertRlweLevelReduceOp : public OpConversionPattern<LevelReduceOp> {
@@ -489,21 +525,6 @@ struct ConvertRlweDecodeOp : public OpConversionPattern<DecodeOp> {
                                 evaluator, adaptor.getInput(), alloc);
 
     rewriter.replaceOp(op, decodeOp.getResult());
-    return success();
-  }
-};
-
-struct ConvertLWEReinterpretApplicationData
-    : public OpConversionPattern<lwe::ReinterpretApplicationDataOp> {
-  using OpConversionPattern::OpConversionPattern;
-
-  LogicalResult matchAndRewrite(
-      lwe::ReinterpretApplicationDataOp op, OpAdaptor adaptor,
-      ConversionPatternRewriter& rewriter) const override {
-    // Erase reinterpret application data.
-    // If operand has no defining op, we can not replace it with defining op.
-    rewriter.replaceAllOpUsesWith(op, adaptor.getOperands()[0]);
-    rewriter.eraseOp(op);
     return success();
   }
 };
@@ -702,6 +723,10 @@ using ConvertCKKSLevelReduceOp =
     ConvertRlweLevelReduceOp<lattigo::CKKSEvaluatorType, ckks::LevelReduceOp,
                              lattigo::RLWEDropLevelNewOp>;
 
+using ConvertCKKSBootstrappingOp =
+    ConvertRlweOpBootstrap<lattigo::CKKSBootstrappingEvaluatorType,
+                           ckks::BootstrapOp, lattigo::CKKSBootstrapOp>;
+
 #define GEN_PASS_DEF_LWETOLATTIGO
 #include "lib/Dialect/LWE/Conversions/LWEToLattigo/LWEToLattigo.h.inc"
 
@@ -752,8 +777,7 @@ struct LWEToLattigo : public impl::LWEToLattigoBase<LWEToLattigo> {
     target
         .addIllegalOp<lwe::RLWEEncryptOp, lwe::RLWEDecryptOp, lwe::RLWEEncodeOp,
                       lwe::RLWEDecodeOp, lwe::RAddOp, lwe::RSubOp, lwe::RMulOp,
-                      lwe::RMulPlainOp, lwe::RSubPlainOp, lwe::RAddPlainOp,
-                      lwe::ReinterpretApplicationDataOp>();
+                      lwe::RMulPlainOp, lwe::RSubPlainOp, lwe::RAddPlainOp>();
 
     RewritePatternSet patterns(context);
     addStructuralConversionPatterns(typeConverter, patterns, target);
@@ -860,6 +884,16 @@ struct LWEToLattigo : public impl::LWEToLattigoBase<LWEToLattigo> {
         {lattigo::BGVEncoderType::get(context),
          gateByBGVModuleAttr(
              containsArgumentOfDialect<lwe::LWEDialect, bgv::BGVDialect>)},
+        // Add a CKKS bootstrapping evaluator - this contains a pointer to a
+        // CKKS evaluator, and for simplicity, the function signature can
+        // contain both. Callers will create only a bootstrapper evaluator and
+        // pass the bootstrap_eval.Evaluator in as well.
+        {lattigo::CKKSBootstrappingEvaluatorType::get(context),
+         gateByCKKSModuleAttr([&](Operation* op) {
+           return containsArgumentOfDialect<lwe::LWEDialect, ckks::CKKSDialect>(
+                      op) &&
+                  containsBootstrap(op);
+         })},
         {lattigo::CKKSEvaluatorType::get(context),
          gateByCKKSModuleAttr(
              containsArgumentOfDialect<lwe::LWEDialect, ckks::CKKSDialect>)},
@@ -891,17 +925,17 @@ struct LWEToLattigo : public impl::LWEToLattigoBase<LWEToLattigo> {
                                                                 context);
     }
     if (moduleIsCKKS(module)) {
-      patterns.add<
-          ConvertCKKSAddOp, ConvertCKKSSubOp, ConvertCKKSMulOp,
-          ConvertCKKSAddPlainOp, ConvertCKKSSubPlainOp, ConvertCKKSMulPlainOp,
-          ConvertCKKSRelinOp, ConvertCKKSModulusSwitchOp, ConvertCKKSRotateOp,
-          ConvertCKKSEncryptOp, ConvertCKKSDecryptOp, ConvertCKKSEncodeOp,
-          ConvertCKKSDecodeOp, ConvertCKKSLevelReduceOp,
-          ConvertOrionLinearTransformOp, ConvertOrionChebyshevOp>(typeConverter,
-                                                                  context);
+      patterns.add<ConvertCKKSAddOp, ConvertCKKSSubOp, ConvertCKKSMulOp,
+                   ConvertCKKSAddPlainOp, ConvertCKKSSubPlainOp,
+                   ConvertCKKSMulPlainOp, ConvertCKKSRelinOp,
+                   ConvertCKKSModulusSwitchOp, ConvertCKKSRotateOp,
+                   ConvertCKKSEncryptOp, ConvertCKKSDecryptOp,
+                   ConvertCKKSEncodeOp, ConvertCKKSDecodeOp,
+                   ConvertCKKSLevelReduceOp, ConvertCKKSBootstrappingOp,
+                   ConvertOrionLinearTransformOp, ConvertOrionChebyshevOp>(
+          typeConverter, context);
     }
     // Misc
-    patterns.add<ConvertLWEReinterpretApplicationData>(typeConverter, context);
 
     ConversionConfig config;
     config.allowPatternRollback = false;

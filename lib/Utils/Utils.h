@@ -4,11 +4,13 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "mlir/include/mlir/IR/Attributes.h"  // from @llvm-project
+#include "mlir/include/mlir/Dialect/Func/IR/FuncOps.h"  // from @llvm-project
+#include "mlir/include/mlir/IR/Attributes.h"            // from @llvm-project
 #include "mlir/include/mlir/IR/BuiltinAttributeInterfaces.h"  // from @llvm-project
 #include "mlir/include/mlir/IR/Dialect.h"          // from @llvm-project
 #include "mlir/include/mlir/IR/Location.h"         // from @llvm-project
@@ -76,6 +78,18 @@ LogicalResult walkAndValidateValues(
     Operation* op, IsValidValueFn isValidValue,
     std::optional<std::string> err = std::nullopt);
 
+namespace detail {
+template <typename T>
+Operation* getOperation(T& op) {
+  return op.getOperation();
+}
+
+template <>
+inline Operation* getOperation<Operation*>(Operation*& op) {
+  return op;
+}
+}  // namespace detail
+
 /// Walk the IR and apply a predicate to all SSA values and produced values.
 /// Values will be visited once for the operation that defines them, and once
 /// for each use. The valueProcessor must be aware that it may be called
@@ -93,11 +107,41 @@ LogicalResult walkAndValidateTypes(
     std::optional<std::string> err = std::nullopt) {
   LogicalResult res = success();
   op->walk([&](OpTy op) {
-    res = validateTypes(op.getOperation(), isValidType);
-    if (failed(res) && err.has_value()) op->emitError() << err.value();
+    Operation* operation = detail::getOperation(op);
+    res = validateTypes(operation, isValidType);
+    if (failed(res) && err.has_value()) operation->emitError() << err.value();
     return failed(res) ? WalkResult::interrupt() : WalkResult::advance();
   });
   return res;
+}
+
+/// Get the function op that a call op is calling.
+FailureOr<func::FuncOp> getCalledFunction(func::CallOp callOp);
+
+// Helper to traverse op and any nested functions called.
+// Applies callback to matching ops of type OpType in func, and in any funcs
+// called by func. The walk is interrupted if callback returns interrupt().
+template <typename FnT>
+WalkResult walkFuncAndCallees(func::FuncOp func, FnT&& callback) {
+  std::queue<func::FuncOp> worklist;
+  worklist.push(func);
+  DenseSet<func::FuncOp> done = {};
+  while (!worklist.empty()) {
+    func::FuncOp next = worklist.front();
+    worklist.pop();
+    WalkResult result = next.walk([&](Operation* op) {
+      if (auto callOp = dyn_cast<func::CallOp>(op)) {
+        auto maybeCallee = getCalledFunction(callOp);
+        if (succeeded(maybeCallee) && !done.contains(maybeCallee.value()) &&
+            maybeCallee.value() != next)
+          worklist.push(maybeCallee.value());
+      }
+      return callback(op);
+    });
+    if (result.wasInterrupted()) return WalkResult::interrupt();
+    done.insert(next);
+  }
+  return WalkResult::advance();
 }
 
 // Returns true if the op contains ops from the given dialects.
@@ -162,6 +206,13 @@ inline std::pair<bool, bool> allZeroAllOne(ArrayRef<double> mask) {
   }
   return {allZero, allOne};
 }
+
+/// Returns true if and only if all types in the given values are the same.
+bool allTypesMatch(ArrayRef<Value> values);
+
+/// Extends all (integer-typed) values to the largest bitwidth among them and
+/// returns the new list of values.
+SmallVector<Value> extendToCommonWidth(OpBuilder& b, ArrayRef<Value> values);
 
 }  // namespace heir
 }  // namespace mlir

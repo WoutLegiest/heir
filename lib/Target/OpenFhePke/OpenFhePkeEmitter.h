@@ -14,8 +14,8 @@
 #include "include/cereal/types/vector.hpp"  // from @cereal
 // IWYU pragma: end_keep
 
+#include "lib/Analysis/Cpp/ConstQualifierAnalysis.h"
 #include "lib/Analysis/SelectVariableNames/SelectVariableNames.h"
-#include "lib/Dialect/LWE/IR/LWEOps.h"
 #include "lib/Dialect/Openfhe/IR/OpenfheOps.h"
 #include "lib/Target/OpenFhePke/OpenFheUtils.h"
 #include "llvm/include/llvm/Support/raw_ostream.h"  // from @llvm-project
@@ -65,6 +65,7 @@ struct Weights {
 class OpenFhePkeEmitter {
  public:
   OpenFhePkeEmitter(raw_ostream& os, SelectVariableNames* variableNames,
+                    ConstQualifierAnalysis* constQualifierAnalysis,
                     const OpenfheImportType& importType,
                     const std::string& weightsFile, bool skipVectorResizing);
 
@@ -79,6 +80,10 @@ class OpenFhePkeEmitter {
   /// Pre-populated analysis selecting unique variable names for all the SSA
   /// values.
   SelectVariableNames* variableNames;
+
+  /// Pre-populated analysis describing which variables can be emitted
+  /// as const or const auto&
+  ConstQualifierAnalysis* constQualifierAnalysis;
 
   /// Set of values that are mutable and don't need assign prefixes.
   llvm::DenseSet<::mlir::Value> mutableValues;
@@ -106,12 +111,17 @@ class OpenFhePkeEmitter {
   LogicalResult printOperation(::mlir::arith::ExtUIOp op);
   LogicalResult printOperation(::mlir::arith::FloorDivSIOp op);
   LogicalResult printOperation(::mlir::arith::IndexCastOp op);
+  LogicalResult printOperation(::mlir::arith::MaxSIOp op);
+  LogicalResult printOperation(::mlir::arith::MinSIOp op);
   LogicalResult printOperation(::mlir::arith::MulIOp op);
+  LogicalResult printOperation(::mlir::arith::MulFOp op);
   LogicalResult printOperation(::mlir::arith::RemSIOp op);
   LogicalResult printOperation(::mlir::arith::SelectOp op);
   LogicalResult printOperation(::mlir::arith::SubIOp op);
   LogicalResult printOperation(::mlir::scf::IfOp op);
   LogicalResult printOperation(::mlir::scf::ForOp op);
+  LogicalResult printOperation(::mlir::scf::ForallOp op);
+  LogicalResult printOperation(::mlir::scf::InParallelOp op);
   LogicalResult printOperation(::mlir::scf::YieldOp op);
   LogicalResult printOperation(::mlir::tensor::ConcatOp op);
   LogicalResult printOperation(::mlir::tensor::EmptyOp op);
@@ -121,42 +131,55 @@ class OpenFhePkeEmitter {
   LogicalResult printOperation(::mlir::tensor::ExpandShapeOp op);
   LogicalResult printOperation(::mlir::tensor::InsertOp op);
   LogicalResult printOperation(::mlir::tensor::InsertSliceOp op);
+  LogicalResult printOperation(::mlir::tensor::ParallelInsertSliceOp op);
   LogicalResult printOperation(::mlir::tensor::SplatOp op);
   LogicalResult printOperation(::mlir::tensor::FromElementsOp op);
   LogicalResult printOperation(::mlir::func::FuncOp op);
   LogicalResult printOperation(::mlir::func::CallOp op);
   LogicalResult printOperation(::mlir::func::ReturnOp op);
-  LogicalResult printOperation(::mlir::heir::lwe::RLWEDecodeOp op);
-  LogicalResult printOperation(
-      ::mlir::heir::lwe::ReinterpretApplicationDataOp op);
+  LogicalResult printOperation(AddInPlaceOp op);
   LogicalResult printOperation(AddOp op);
+  LogicalResult printOperation(AddPlainInPlaceOp op);
   LogicalResult printOperation(AddPlainOp op);
   LogicalResult printOperation(AutomorphOp op);
   LogicalResult printOperation(BootstrapOp op);
+  LogicalResult printOperation(DecodeCKKSOp op);
+  LogicalResult printOperation(DecodeOp op);
   LogicalResult printOperation(DecryptOp op);
   LogicalResult printOperation(EncryptOp op);
-  LogicalResult printOperation(GenParamsOp op);
   LogicalResult printOperation(FastRotationOp op);
+  LogicalResult printOperation(FastRotationExtOp op);
   LogicalResult printOperation(FastRotationPrecomputeOp op);
   LogicalResult printOperation(GenBootstrapKeyOp op);
   LogicalResult printOperation(GenContextOp op);
   LogicalResult printOperation(GenMulKeyOp op);
+  LogicalResult printOperation(GenParamsOp op);
   LogicalResult printOperation(GenRotKeyOp op);
+  LogicalResult printOperation(KeySwitchInPlaceOp op);
   LogicalResult printOperation(KeySwitchOp op);
+  LogicalResult printOperation(KeySwitchDownOp op);
+  LogicalResult printOperation(LevelReduceInPlaceOp op);
   LogicalResult printOperation(LevelReduceOp op);
   LogicalResult printOperation(MakeCKKSPackedPlaintextOp op);
   LogicalResult printOperation(MakePackedPlaintextOp op);
+  LogicalResult printOperation(ModReduceInPlaceOp op);
   LogicalResult printOperation(ModReduceOp op);
+  LogicalResult printOperation(MulConstInPlaceOp op);
   LogicalResult printOperation(MulConstOp op);
   LogicalResult printOperation(MulNoRelinOp op);
   LogicalResult printOperation(MulOp op);
   LogicalResult printOperation(MulPlainOp op);
+  LogicalResult printOperation(NegateInPlaceOp op);
   LogicalResult printOperation(NegateOp op);
+  LogicalResult printOperation(RelinInPlaceOp op);
   LogicalResult printOperation(RelinOp op);
   LogicalResult printOperation(RotOp op);
   LogicalResult printOperation(SetupBootstrapOp op);
+  LogicalResult printOperation(SquareInPlaceOp op);
   LogicalResult printOperation(SquareOp op);
+  LogicalResult printOperation(SubInPlaceOp op);
   LogicalResult printOperation(SubOp op);
+  LogicalResult printOperation(SubPlainInPlaceOp op);
   LogicalResult printOperation(SubPlainOp op);
 
   // Helpers for above
@@ -164,15 +187,21 @@ class OpenFhePkeEmitter {
                                 ::mlir::Value cryptoContext,
                                 ::mlir::ValueRange nonEvalOperands,
                                 std::string_view op);
+  LogicalResult printEvalInPlaceMethod(::mlir::Value result,
+                                       ::mlir::Value cryptoContext,
+                                       ::mlir::ValueRange nonEvalOperands,
+                                       std::string_view op);
   LogicalResult printBinaryOp(Operation* op, ::mlir::Value lhs,
                               ::mlir::Value rhs, std::string_view opName);
+  LogicalResult decodeCore(::mlir::Location loc, ::mlir::Value input,
+                           ::mlir::Value result, bool isCKKS);
 
   // A helper for a special case of ExtractSliceOp
   LogicalResult extractRowFromMatrix(tensor::ExtractSliceOp op);
 
-  // Emit an OpenFhe type, using a const specifier.
+  // Emit an OpenFHE type, using a const specifier if constant is true
   LogicalResult emitType(::mlir::Type type, ::mlir::Location loc,
-                         bool constant = true);
+                         bool constant = false);
 
   std::string getDebugAttrMapName() {
     static int debugAttrMapCount = 0;
@@ -182,7 +211,7 @@ class OpenFhePkeEmitter {
   void emitAutoAssignPrefix(::mlir::Value result);
   LogicalResult emitTypedAssignPrefix(::mlir::Value result,
                                       ::mlir::Location loc,
-                                      bool constant = true);
+                                      bool constant = false);
 };
 
 }  // namespace openfhe

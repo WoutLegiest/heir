@@ -5,27 +5,40 @@
 #include <functional>
 
 #include "lib/Analysis/Utils.h"
-#include "lib/Dialect/Mgmt/IR/MgmtOps.h"
+#include "lib/Dialect/HEIRInterfaces.h"
 #include "lib/Dialect/Secret/IR/SecretOps.h"
 #include "llvm/include/llvm/ADT/TypeSwitch.h"              // from @llvm-project
+#include "llvm/include/llvm/Support/Debug.h"               // from @llvm-project
 #include "mlir/include/mlir/Analysis/DataFlowFramework.h"  // from @llvm-project
-#include "mlir/include/mlir/Dialect/Arith/IR/Arith.h"      // from @llvm-project
-#include "mlir/include/mlir/Dialect/Tensor/IR/Tensor.h"    // from @llvm-project
 #include "mlir/include/mlir/IR/Operation.h"                // from @llvm-project
 #include "mlir/include/mlir/IR/Value.h"                    // from @llvm-project
 #include "mlir/include/mlir/IR/Visitors.h"                 // from @llvm-project
 #include "mlir/include/mlir/Interfaces/CallInterfaces.h"   // from @llvm-project
 #include "mlir/include/mlir/Support/LLVM.h"                // from @llvm-project
 
+#define DEBUG_TYPE "muldepth-analysis"
+
 namespace mlir {
 namespace heir {
 
+static void debugLog(StringRef opName,
+                     ArrayRef<const MulDepthLattice*> operands,
+                     const MulDepthState& result) {
+  LLVM_DEBUG({
+    llvm::dbgs() << "transferForward: " << opName << "(";
+    for (auto* operand : operands) {
+      operand->getValue().print(llvm::dbgs());
+      llvm::dbgs() << ", ";
+    }
+    llvm::dbgs() << ") = ";
+    result.print(llvm::dbgs());
+    llvm::dbgs() << "\n";
+  });
+};
+
 FailureOr<int64_t> deriveResultMulDepth(
     Operation* op, ArrayRef<const MulDepthLattice*> operands) {
-  auto isMul = false;
-  if (isa<arith::MulIOp, arith::MulFOp, mgmt::AdjustScaleOp>(op)) {
-    isMul = true;
-  }
+  if (isa<ResetsMulDepthOpInterface>(op)) return 0;
 
   int64_t operandsMulDepth = 0;
   for (auto* operand : operands) {
@@ -36,7 +49,9 @@ FailureOr<int64_t> deriveResultMulDepth(
         std::max(operandsMulDepth, operand->getValue().getMulDepth());
   }
 
-  return operandsMulDepth + (isMul ? 1 : 0);
+  int64_t increase = 0;
+  if (dyn_cast<IncreasesMulDepthOpInterface>(op)) increase = 1;
+  return operandsMulDepth + increase;
 }
 
 LogicalResult MulDepthAnalysis::visitOperation(
@@ -76,8 +91,10 @@ LogicalResult MulDepthAnalysis::visitOperation(
           return;
         }
 
+        MulDepthState resultState(resultsMulDepth.value());
+        debugLog(op.getName().getStringRef(), operands, resultState);
         for (auto result : secretResults) {
-          propagate(result, MulDepthState(resultsMulDepth.value()));
+          propagate(result, resultState);
         }
       });
   return success();

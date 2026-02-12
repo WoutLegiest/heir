@@ -115,7 +115,10 @@ LogicalResult LattigoEmitter::translate(Operation& op) {
               CKKSAddNewOp, CKKSSubNewOp, CKKSMulNewOp, CKKSAddOp, CKKSSubOp,
               CKKSMulOp, CKKSRelinearizeOp, CKKSRescaleOp, CKKSRotateOp,
               CKKSRelinearizeNewOp, CKKSRescaleNewOp, CKKSRotateNewOp,
-              CKKSLinearTransformOp, CKKSChebyshevOp>(
+              CKKSLinearTransformOp, CKKSChebyshevOp, CKKSBootstrapOp,
+              CKKSNewBootstrappingParametersFromLiteralOp,
+              CKKSGenEvaluationKeysBootstrappingOp,
+              CKKSNewBootstrappingEvaluatorOp>(
               [&](auto op) { return printOperation(op); })
           .Default([&](Operation&) {
             return emitError(op.getLoc(), "unable to find printer for op");
@@ -1178,19 +1181,19 @@ LogicalResult LattigoEmitter::printOperation(BGVMulNewOp op) {
 }
 
 LogicalResult LattigoEmitter::printOperation(BGVAddOp op) {
-  return printEvalInplaceMethod(op.getEvaluator(),
+  return printEvalInPlaceMethod(op.getEvaluator(),
                                 {op.getLhs(), op.getRhs(), op.getInplace()},
                                 "Add", true);
 }
 
 LogicalResult LattigoEmitter::printOperation(BGVSubOp op) {
-  return printEvalInplaceMethod(op.getEvaluator(),
+  return printEvalInPlaceMethod(op.getEvaluator(),
                                 {op.getLhs(), op.getRhs(), op.getInplace()},
                                 "Sub", true);
 }
 
 LogicalResult LattigoEmitter::printOperation(BGVMulOp op) {
-  return printEvalInplaceMethod(op.getEvaluator(),
+  return printEvalInPlaceMethod(op.getEvaluator(),
                                 {op.getLhs(), op.getRhs(), op.getInplace()},
                                 "Mul", true);
 }
@@ -1204,7 +1207,7 @@ LogicalResult LattigoEmitter::printOperation(BGVRescaleNewOp op) {
   // there is no RescaleNew method in Lattigo, manually create new ciphertext
   os << getName(op.getOutput()) << " := " << getName(op.getInput())
      << ".CopyNew()\n";
-  return printEvalInplaceMethod(
+  return printEvalInPlaceMethod(
       op.getEvaluator(), {op.getInput(), op.getOutput()}, "Rescale", true);
 }
 
@@ -1224,12 +1227,12 @@ LogicalResult LattigoEmitter::printOperation(BGVRotateRowsNewOp op) {
 }
 
 LogicalResult LattigoEmitter::printOperation(BGVRelinearizeOp op) {
-  return printEvalInplaceMethod(
+  return printEvalInPlaceMethod(
       op.getEvaluator(), {op.getInput(), op.getInplace()}, "Relinearize", true);
 }
 
 LogicalResult LattigoEmitter::printOperation(BGVRescaleOp op) {
-  return printEvalInplaceMethod(
+  return printEvalInPlaceMethod(
       op.getEvaluator(), {op.getInput(), op.getInplace()}, "Rescale", true);
 }
 
@@ -1244,7 +1247,7 @@ LogicalResult LattigoEmitter::printOperation(BGVRotateColumnsOp op) {
 }
 
 LogicalResult LattigoEmitter::printOperation(BGVRotateRowsOp op) {
-  return printEvalInplaceMethod(
+  return printEvalInPlaceMethod(
       op.getEvaluator(), {op.getInput(), op.getInplace()}, "RotateRows", true);
 }
 
@@ -1307,6 +1310,22 @@ LogicalResult LattigoEmitter::printOperation(CKKSNewEvaluatorOp op) {
     operands.push_back(Value());
   }
   return printNewMethod(op.getResult(), operands, "ckks.NewEvaluator", false);
+}
+
+LogicalResult LattigoEmitter::printOperation(
+    CKKSGenEvaluationKeysBootstrappingOp op) {
+  auto errName = getErrName();
+  os << getName(op.getResult()) << ", _, " << errName
+     << " := " << getName(op.getParams()) << ".GenEvaluationKeys("
+     << getName(op.getSk()) << ")\n";
+  printErrPanic(errName);
+  return success();
+}
+
+LogicalResult LattigoEmitter::printOperation(
+    CKKSNewBootstrappingEvaluatorOp op) {
+  return printNewMethod(op.getResult(), op.getOperands(),
+                        "bootstrapping.NewEvaluator", true);
 }
 
 LogicalResult LattigoEmitter::printOperation(CKKSNewPlaintextOp op) {
@@ -1414,19 +1433,19 @@ LogicalResult LattigoEmitter::printOperation(CKKSMulNewOp op) {
 }
 
 LogicalResult LattigoEmitter::printOperation(CKKSAddOp op) {
-  return printEvalInplaceMethod(op.getEvaluator(),
+  return printEvalInPlaceMethod(op.getEvaluator(),
                                 {op.getLhs(), op.getRhs(), op.getInplace()},
                                 "Add", true);
 }
 
 LogicalResult LattigoEmitter::printOperation(CKKSSubOp op) {
-  return printEvalInplaceMethod(op.getEvaluator(),
+  return printEvalInPlaceMethod(op.getEvaluator(),
                                 {op.getLhs(), op.getRhs(), op.getInplace()},
                                 "Sub", true);
 }
 
 LogicalResult LattigoEmitter::printOperation(CKKSMulOp op) {
-  return printEvalInplaceMethod(op.getEvaluator(),
+  return printEvalInPlaceMethod(op.getEvaluator(),
                                 {op.getLhs(), op.getRhs(), op.getInplace()},
                                 "Mul", true);
 }
@@ -1440,7 +1459,7 @@ LogicalResult LattigoEmitter::printOperation(CKKSRescaleNewOp op) {
   // there is no RescaleNew method in Lattigo, manually create new ciphertext
   os << getName(op.getOutput()) << " := " << getName(op.getInput())
      << ".CopyNew()\n";
-  return printEvalInplaceMethod(
+  return printEvalInPlaceMethod(
       op.getEvaluator(), {op.getInput(), op.getOutput()}, "Rescale", true);
 }
 
@@ -1455,12 +1474,12 @@ LogicalResult LattigoEmitter::printOperation(CKKSRotateNewOp op) {
 }
 
 LogicalResult LattigoEmitter::printOperation(CKKSRelinearizeOp op) {
-  return printEvalInplaceMethod(
+  return printEvalInPlaceMethod(
       op.getEvaluator(), {op.getInput(), op.getInplace()}, "Relinearize", true);
 }
 
 LogicalResult LattigoEmitter::printOperation(CKKSRescaleOp op) {
-  return printEvalInplaceMethod(
+  return printEvalInPlaceMethod(
       op.getEvaluator(), {op.getInput(), op.getInplace()}, "Rescale", true);
 }
 
@@ -1470,6 +1489,17 @@ LogicalResult LattigoEmitter::printOperation(CKKSRotateOp op) {
   os << getName(op.getInput()) << ", ";
   os << op.getOffset().getInt() << ", ";
   os << getName(op.getInplace()) << ")\n";
+  printErrPanic(errName);
+  return success();
+}
+
+LogicalResult LattigoEmitter::printOperation(CKKSBootstrapOp op) {
+  imports.insert(std::string(kBootstrappingImport));
+
+  auto errName = getErrName();
+  os << getName(op.getResult()) << ", " << errName
+     << " := " << getName(op.getEvaluator()) << ".Bootstrap(";
+  os << getName(op.getInput()) << ")\n";
   printErrPanic(errName);
   return success();
 }
@@ -1568,6 +1598,24 @@ LogicalResult LattigoEmitter::printOperation(
   return success();
 }
 
+LogicalResult LattigoEmitter::printOperation(
+    CKKSNewBootstrappingParametersFromLiteralOp op) {
+  imports.insert(std::string(kLattigoUtilsImport));
+  auto btParams = op.getBtParamsLiteral();
+  auto paramName = getName(op.getParams());
+  auto errName = getErrName();
+  os << getName(op.getResult()) << ", " << errName
+     << " := bootstrapping.NewParametersFromLiteral(";
+  os << paramName << ", ";
+  os << "bootstrapping.ParametersLiteral{\n";
+  os.indent();
+  os << "LogN: utils.Pointy(" << btParams.getLogN() << "),\n";
+  os.unindent();
+  os << "})\n";
+  printErrPanic(errName);
+  return success();
+}
+
 LogicalResult LattigoEmitter::printOperation(CKKSNewPolynomialEvaluatorOp op) {
   imports.insert(std::string(kCkksCircuitPolynomialImport));
 
@@ -1635,7 +1683,7 @@ LogicalResult LattigoEmitter::printNewMethod(::mlir::Value result,
   return success();
 }
 
-LogicalResult LattigoEmitter::printEvalInplaceMethod(
+LogicalResult LattigoEmitter::printEvalInPlaceMethod(
     ::mlir::Value evaluator, ::mlir::ValueRange operands, std::string_view op,
     bool err) {
   std::string errName = getErrName();
@@ -1704,8 +1752,14 @@ FailureOr<std::string> LattigoEmitter::convertType(Type type) {
           [&](auto ty) { return std::string("*ckks.Encoder"); })
       .Case<CKKSEvaluatorType>(
           [&](auto ty) { return std::string("*ckks.Evaluator"); })
+      .Case<CKKSBootstrappingEvaluationKeysType>(
+          [&](auto ty) { return std::string("*bootstrapping.EvaluationKeys"); })
+      .Case<CKKSBootstrappingEvaluatorType>(
+          [&](auto ty) { return std::string("*bootstrapping.Evaluator"); })
       .Case<CKKSParameterType>(
           [&](auto ty) { return std::string("ckks.Parameters"); })
+      .Case<CKKSBootstrappingParameterType>(
+          [&](auto ty) { return std::string("bootstrapping.Parameters"); })
       .Case<IntegerType>([&](auto ty) -> FailureOr<std::string> {
         auto width = ty.getWidth();
         if (width == 1) {

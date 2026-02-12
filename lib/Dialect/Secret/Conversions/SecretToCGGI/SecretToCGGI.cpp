@@ -99,10 +99,8 @@ Operation* convertWriteOpInterface(
         auto ctTy =
             dyn_cast<lwe::LWECiphertextType>(toTensorTy.getElementType());
         auto ptxtTy = lwe::LWEPlaintextType::get(b.getContext(),
-                                                 ctTy.getApplicationData(),
                                                  ctTy.getPlaintextSpace());
 
-        auto overflowAttr = ctTy.getApplicationData().getOverflow();
         auto ciphertextBits = ctTy.getCiphertextSpace()
                                   .getRing()
                                   .getCoefficientType()
@@ -116,8 +114,7 @@ Operation* convertWriteOpInterface(
           auto ctValue = lwe::TrivialEncryptOp::create(
               b, ctTy,
               lwe::EncodeOp::create(b, op->getLoc(), ptxtTy, valueToStore,
-                                    b.getIndexAttr(plaintextBits),
-                                    overflowAttr),
+                                    b.getIndexAttr(plaintextBits)),
               b.getIndexAttr(ciphertextBits));
 
           return tensor::InsertOp::create(b, ctValue, toTensor, indices);
@@ -139,7 +136,7 @@ Operation* convertWriteOpInterface(
         auto ctValue = lwe::TrivialEncryptOp::create(
             b, ctTy,
             lwe::EncodeOp::create(b, op->getLoc(), ptxtTy, bitValue,
-                                  b.getIndexAttr(plaintextBits), overflowAttr),
+                                  b.getIndexAttr(plaintextBits)),
             b.getIndexAttr(ciphertextBits));
 
         indices.push_back(idx);
@@ -165,8 +162,8 @@ Operation* convertWriteOpInterface(
         SmallVector<OpFoldResult> strides(rank, oneIdxAttr);
         SmallVector<OpFoldResult> sizes(rank - 1, oneIdxAttr);
         sizes.push_back(rewriter.getIndexAttr(toTensorTy.getShape()[rank - 1]));
-        return b.create<tensor::InsertSliceOp>(valueToStore, toTensor, offsets,
-                                               sizes, strides);
+        return tensor::InsertSliceOp::create(b, valueToStore, toTensor, offsets,
+                                             sizes, strides);
       });
   llvm_unreachable("expected integer or tensor to store in ciphertext tensor");
 }
@@ -195,8 +192,8 @@ Operation* convertReadOpInterface(
   SmallVector<OpFoldResult> sizes(rank - 1, oneIdxAttr);
   sizes.push_back(rewriter.getIndexAttr(fromTensorType.getShape()[rank - 1]));
 
-  return b.create<tensor::ExtractSliceOp>(outputTy, fromTensor, offsets, sizes,
-                                          strides);
+  return tensor::ExtractSliceOp::create(b, outputTy, fromTensor, offsets, sizes,
+                                        strides);
 }
 
 SmallVector<Value> encodeInputs(
@@ -212,7 +209,6 @@ SmallVector<Value> encodeInputs(
   }
 
   // Encode any plaintexts in the inputs.
-  auto overflow = ctxtTy.getApplicationData().getOverflow();
   auto ptxtSpace = ctxtTy.getPlaintextSpace();
   auto plaintextBits = rewriter.getIndexAttr(
       ptxtSpace.getRing().getCoefficientType().getIntOrFloatBitWidth());
@@ -220,19 +216,17 @@ SmallVector<Value> encodeInputs(
                                                   .getRing()
                                                   .getCoefficientType()
                                                   .getIntOrFloatBitWidth());
-  auto ptxtTy = lwe::LWEPlaintextType::get(
-      rewriter.getContext(), ctxtTy.getApplicationData(), ptxtSpace);
+  auto ptxtTy = lwe::LWEPlaintextType::get(rewriter.getContext(), ptxtSpace);
   return llvm::to_vector(llvm::map_range(inputs, [&](auto input) -> Value {
     if (!isa<lwe::LWECiphertextType>(input.getType())) {
       IntegerType integerTy = dyn_cast<IntegerType>(input.getType());
       assert(integerTy && integerTy.getWidth() == 1 &&
              "LUT inputs should be single-bit integers");
-      return rewriter
-          .create<lwe::TrivialEncryptOp>(
-              op->getLoc(), ctxtTy,
-              lwe::EncodeOp::create(rewriter, op->getLoc(), ptxtTy, input,
-                                    plaintextBits, overflow),
-              ciphertextBits)
+      return lwe::TrivialEncryptOp::create(
+                 rewriter, op->getLoc(), ctxtTy,
+                 lwe::EncodeOp::create(rewriter, op->getLoc(), ptxtTy, input,
+                                       plaintextBits),
+                 ciphertextBits)
           .getResult();
     }
     return input;
@@ -255,7 +249,7 @@ class SecretTypeConverter : public ContextAwareTypeConverter {
   Type getLWECiphertextForInt(MLIRContext* ctx, Type type) const {
     if (IntegerType intType = dyn_cast<IntegerType>(type)) {
       if (intType.getWidth() == 1) {
-        return lwe::getDefaultCGGICiphertextType(ctx, 1);
+        return lwe::getDefaultCGGICiphertextType(ctx, this->minBitWidth);
       }
       return RankedTensorType::get(
           {intType.getWidth()},
@@ -322,11 +316,20 @@ class SecretGenericOpLUTConversion
     // Assemble the lookup table.
     comb::TruthTableOp truthOp =
         cast<comb::TruthTableOp>(op.getBody()->getOperations().front());
-    return rewriter
-        .replaceOpWithNewOp<cggi::Lut3Op>(op, encodedInputs[0],
-                                          encodedInputs[1], encodedInputs[2],
-                                          truthOp.getLookupTable())
-        .getOperation();
+
+    if (encodedInputs.size() == 3)
+      return rewriter
+          .replaceOpWithNewOp<cggi::Lut3Op>(op, encodedInputs[0],
+                                            encodedInputs[1], encodedInputs[2],
+                                            truthOp.getLookupTable())
+          .getOperation();
+    if (encodedInputs.size() == 4)
+      return rewriter
+          .replaceOpWithNewOp<cggi::Lut4Op>(
+              op, encodedInputs[0], encodedInputs[1], encodedInputs[2],
+              encodedInputs[3], truthOp.getLookupTable())
+          .getOperation();
+    return rewriter.notifyMatchFailure(op, "expected 3 or 4 LUT inputs");
   }
 };
 
@@ -576,8 +579,8 @@ struct ConvertSecretConcealOp
                                       ->getContextualAttr(op.getResult())
                                       .value_or(nullptr));
     auto ctTy = cast<lwe::LWECiphertextType>(getElementTypeOrSelf(convertedTy));
-    auto ptxtTy = lwe::LWEPlaintextType::get(
-        b.getContext(), ctTy.getApplicationData(), ctTy.getPlaintextSpace());
+    auto ptxtTy =
+        lwe::LWEPlaintextType::get(b.getContext(), ctTy.getPlaintextSpace());
 
     Value valueToStore = adaptor.getCleartext();
     Value resultValue;
@@ -590,7 +593,6 @@ struct ConvertSecretConcealOp
                                  .getRing()
                                  .getCoefficientType()
                                  .getIntOrFloatBitWidth();
-        auto overflowAttr = ctTy.getApplicationData().getOverflow();
         auto ciphertextBits = ctTy.getCiphertextSpace()
                                   .getRing()
                                   .getCoefficientType()
@@ -599,7 +601,7 @@ struct ConvertSecretConcealOp
         return {lwe::TrivialEncryptOp::create(
             b, b.getLoc(), ctTy,
             lwe::EncodeOp::create(b, b.getLoc(), ptxtTy, value,
-                                  b.getIndexAttr(plaintextBits), overflowAttr),
+                                  b.getIndexAttr(plaintextBits)),
             b.getIndexAttr(ciphertextBits))};
       }
       SmallVector<Value> elementValues;
@@ -617,7 +619,6 @@ struct ConvertSecretConcealOp
                                  .getRing()
                                  .getCoefficientType()
                                  .getIntOrFloatBitWidth();
-        auto overflowAttr = ctTy.getApplicationData().getOverflow();
         auto ciphertextBits = ctTy.getCiphertextSpace()
                                   .getRing()
                                   .getCoefficientType()
@@ -626,7 +627,7 @@ struct ConvertSecretConcealOp
         auto ctValue = lwe::TrivialEncryptOp::create(
             b, b.getLoc(), ctTy,
             lwe::EncodeOp::create(b, b.getLoc(), ptxtTy, bitValue,
-                                  b.getIndexAttr(plaintextBits), overflowAttr),
+                                  b.getIndexAttr(plaintextBits)),
             b.getIndexAttr(ciphertextBits));
 
         elementValues.push_back(ctValue);
@@ -695,8 +696,8 @@ struct ConvertFromElementsOp
           op, "tensor element type must be a ciphertext");
     }
 
-    auto ptTy = lwe::LWEPlaintextType::get(
-        b.getContext(), ctTy.getApplicationData(), ctTy.getPlaintextSpace());
+    auto ptTy =
+        lwe::LWEPlaintextType::get(b.getContext(), ctTy.getPlaintextSpace());
     // All elements of the operation must have the same type. If they are
     // scalars, construct a from_elements op, encoding plaintexts as necessary.
     if (!isa<ShapedType>(inputs[0].getType())) {
@@ -709,7 +710,6 @@ struct ConvertFromElementsOp
                                    .getRing()
                                    .getCoefficientType()
                                    .getIntOrFloatBitWidth();
-          auto overflowAttr = ctTy.getApplicationData().getOverflow();
           auto ciphertextBits = ctTy.getCiphertextSpace()
                                     .getRing()
                                     .getCoefficientType()
@@ -718,15 +718,9 @@ struct ConvertFromElementsOp
           auto ctElement = lwe::TrivialEncryptOp::create(
               b, b.getLoc(), ctTy,
               lwe::EncodeOp::create(b, b.getLoc(), ptTy, element,
-                                    b.getIndexAttr(plaintextBits),
-                                    overflowAttr),
+                                    b.getIndexAttr(plaintextBits)),
               b.getIndexAttr(ciphertextBits));
 
-          // b.create<lwe::TrivialEncryptOp>(
-          //      ctTy,
-          //      b.create<lwe::EncodeOp>(ptTy, element, ctTy.getEncoding()),
-          //      lwe::LWEParamsAttr())
-          //     .getResult();
           values.push_back(ctElement);
         }
       }
@@ -776,8 +770,8 @@ static int findLUTSize(MLIRContext* context, Operation* module) {
   auto processOperation = [&](Operation* op) {
     if (isa<comb::CombDialect>(op->getDialect())) {
       int currentSize = 0;
-      if (dyn_cast<comb::TruthTableOp>(op))
-        currentSize = 3;
+      if (auto ttOp = dyn_cast<comb::TruthTableOp>(op))
+        currentSize = ttOp.getInputs().size();
       else
         currentSize = op->getResults().getTypes()[0].getIntOrFloatBitWidth();
 
